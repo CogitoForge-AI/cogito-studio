@@ -234,6 +234,16 @@ impl ChatService {
             final_metadata,
         )?;
 
+        if is_first_message {
+            self.harness_factory.spawn_title_generation(
+                app.clone(),
+                chat_id.clone(),
+                content.clone(),
+                Some(model.clone()),
+                Some(llm_connection_id.clone()),
+            );
+        }
+
         if let Some(result) = try_route_agent_mention(
             self,
             &chat_id,
@@ -286,16 +296,6 @@ impl ChatService {
             .harness_factory
             .process_message_turn(turn_request, app.clone(), cancellation_rx)
             .await?;
-
-        if is_first_message {
-            self.harness_factory.spawn_title_if_first_message(
-                app,
-                chat_id,
-                content,
-                selected_model.or(workspace_settings.default_model),
-                Some(llm_connection_id),
-            );
-        }
 
         Ok((output.assistant_message_id, output.content))
     }
@@ -356,7 +356,7 @@ impl ChatService {
         model: Option<String>,
         llm_connection_id: Option<String>,
     ) {
-        self.harness_factory.spawn_title_if_first_message(
+        self.harness_factory.spawn_if_first_user_message(
             app,
             chat_id,
             user_content,

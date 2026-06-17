@@ -344,6 +344,13 @@ impl OpenAICompatProvider {
             .unwrap_or("")
             .to_string();
 
+        let reasoning = message
+            .get("reasoning_content")
+            .or_else(|| message.get("reasoning"))
+            .and_then(|c| c.as_str())
+            .filter(|value| !value.is_empty())
+            .map(str::to_string);
+
         let finish_reason = choices
             .first()
             .and_then(|c| c.get("finish_reason"))
@@ -441,7 +448,7 @@ impl OpenAICompatProvider {
             finish_reason,
             tool_calls,
             usage,
-            reasoning: None,
+            reasoning,
             images: None,
         })
     }

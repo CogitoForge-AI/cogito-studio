@@ -186,6 +186,18 @@ const chatsSlice = createSlice({
     closeCurrentChat: (state) => {
       state.selectedChatId = null;
     },
+    setChatTitleFromEvent: (
+      state,
+      action: PayloadAction<{ id: string; title: string }>
+    ) => {
+      Object.keys(state.chatsByWorkspaceId).forEach((workspaceId) => {
+        const chats = state.chatsByWorkspaceId[workspaceId];
+        const index = chats.findIndex((c) => c.id === action.payload.id);
+        if (index !== -1) {
+          chats[index].title = action.payload.title;
+        }
+      });
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -295,5 +307,6 @@ export const {
   updateChat,
   deleteChat,
   closeCurrentChat,
+  setChatTitleFromEvent,
 } = chatsSlice.actions;
 export default chatsSlice.reducer;

@@ -9,7 +9,7 @@ import {
 } from '@/features/chat/state/messages';
 import type { Message } from '@/app/types';
 import {
-  updateChatTitle,
+  setChatTitleFromEvent,
   updateChatLastMessage,
 } from '@/features/chat/state/chatsSlice';
 import { addPermissionRequest } from '@/features/tools/state/toolPermissionSlice';
@@ -476,11 +476,10 @@ export function useChatStreaming() {
       (payload) => {
         logger.info('[useChatStreaming] Received chat_updated event:', payload);
         dispatch(
-          updateChatTitle.fulfilled(
-            { id: payload.chat_id, title: payload.title },
-            '',
-            { id: payload.chat_id, title: payload.title }
-          )
+          setChatTitleFromEvent({
+            id: payload.chat_id,
+            title: payload.title,
+          })
         );
       }
     );

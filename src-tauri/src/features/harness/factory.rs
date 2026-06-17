@@ -116,7 +116,7 @@ impl HarnessFactory {
             .await
     }
 
-    pub fn spawn_title_if_first_message(
+    pub fn spawn_title_generation(
         self: &Arc<Self>,
         app: AppHandle,
         chat_id: String,
@@ -124,7 +124,24 @@ impl HarnessFactory {
         model: Option<String>,
         llm_connection_id: Option<String>,
     ) {
-        self.title_generator.clone().spawn_if_first_message(
+        self.title_generator.clone().spawn_title_generation(
+            app,
+            chat_id,
+            user_content,
+            model,
+            llm_connection_id,
+        );
+    }
+
+    pub fn spawn_if_first_user_message(
+        self: &Arc<Self>,
+        app: AppHandle,
+        chat_id: String,
+        user_content: String,
+        model: Option<String>,
+        llm_connection_id: Option<String>,
+    ) {
+        self.title_generator.clone().spawn_if_first_user_message(
             app,
             chat_id,
             user_content,
