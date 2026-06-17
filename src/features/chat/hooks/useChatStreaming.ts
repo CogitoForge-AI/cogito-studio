@@ -15,6 +15,7 @@ import {
   updateChatLastMessage,
 } from '@/features/chat/state/chatsSlice';
 import { addPermissionRequest } from '@/features/tools/state/toolPermissionSlice';
+import { addUserQuestionRequest } from '@/features/chat/state/askUserSlice';
 import { useTranslation } from 'react-i18next';
 import { messagesApi } from '@/features/chat/state/messagesApi';
 import { extractCodeBlocks } from '@/features/chat/lib/code-block-extractor';
@@ -112,6 +113,19 @@ interface ToolPermissionRequestEvent {
     id: string;
     name: string;
     arguments: unknown;
+  }>;
+}
+
+interface UserQuestionRequestEvent {
+  chat_id: string;
+  message_id: string;
+  tool_call_id: string;
+  title?: string;
+  questions: Array<{
+    id: string;
+    prompt: string;
+    options: Array<{ id: string; label: string }>;
+    allow_multiple?: boolean;
   }>;
 }
 
@@ -449,6 +463,27 @@ export function useChatStreaming() {
         }
       );
 
+    const unlistenUserQuestionRequest = listenToEvent<UserQuestionRequestEvent>(
+      TauriEvents.USER_QUESTION_REQUEST,
+      (payload) => {
+        dispatch(
+          addUserQuestionRequest({
+            chatId: payload.chat_id,
+            messageId: payload.message_id,
+            toolCallId: payload.tool_call_id,
+            title: payload.title,
+            questions: payload.questions.map((q) => ({
+              id: q.id,
+              prompt: q.prompt,
+              options: q.options,
+              allowMultiple: q.allow_multiple,
+            })),
+            timestamp: Date.now(),
+          })
+        );
+      }
+    );
+
     const unlistenChatUpdated = listenToEvent<ChatUpdatedEvent>(
       TauriEvents.CHAT_UPDATED,
       (payload) => {
@@ -476,6 +511,7 @@ export function useChatStreaming() {
       unlistenToolExecutionError.then((fn) => fn());
       unlistenAgentLoopIteration.then((fn) => fn());
       unlistenToolPermissionRequest.then((fn) => fn());
+      unlistenUserQuestionRequest.then((fn) => fn());
       unlistenMetadataUpdated.then((fn) => fn());
       unlistenChatUpdated.then((fn) => fn());
     };

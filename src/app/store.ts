@@ -13,6 +13,7 @@ import {
 import uiReducer from '@/features/ui/state/uiSlice';
 import notificationReducer from '@/features/notifications/state/notificationSlice';
 import toolPermissionReducer from '@/features/tools/state/toolPermissionSlice';
+import askUserReducer from '@/features/chat/state/askUserSlice';
 import { notesReducer } from '@/features/notes/state/notesSlice';
 import { sentryMiddleware } from './sentryMiddleware';
 import { loggingMiddleware } from './loggingMiddleware';
@@ -32,6 +33,7 @@ export const store = configureStore({
     notifications: notificationReducer,
     chatSearch: chatSearchReducer,
     toolPermission: toolPermissionReducer,
+    askUser: askUserReducer,
     notes: notesReducer,
   },
   middleware: (getDefaultMiddleware) =>

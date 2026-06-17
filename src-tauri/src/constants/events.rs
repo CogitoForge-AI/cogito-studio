@@ -26,6 +26,7 @@ impl TauriEvents {
     pub const TOOL_EXECUTION_COMPLETED: &'static str = "tool-execution-completed";
     pub const TOOL_EXECUTION_ERROR: &'static str = "tool-execution-error";
     pub const TOOL_PERMISSION_REQUEST: &'static str = "tool-permission-request";
+    pub const USER_QUESTION_REQUEST: &'static str = "user-question-request";
 
     // Agent events
     pub const AGENT_LOOP_ITERATION: &'static str = "agent-loop-iteration";

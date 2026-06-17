@@ -3,6 +3,7 @@ use crate::error::AppError;
 use crate::events::{
     ToolCall, ToolCallsDetectedEvent, ToolExecutionCompletedEvent, ToolExecutionErrorEvent,
     ToolExecutionProgressEvent, ToolExecutionStartedEvent, ToolPermissionRequestEvent,
+    UserQuestionRequestEvent,
 };
 use tauri::{AppHandle, Emitter};
 
@@ -150,6 +151,17 @@ impl ToolEmitter {
             )
             .map_err(|e| {
                 AppError::Generic(format!("Failed to emit tool-permission-request event: {e}"))
+            })
+    }
+
+    pub fn emit_user_question_request(
+        &self,
+        event: UserQuestionRequestEvent,
+    ) -> Result<(), AppError> {
+        self.app
+            .emit(TauriEvents::USER_QUESTION_REQUEST, event)
+            .map_err(|e| {
+                AppError::Generic(format!("Failed to emit user-question-request event: {e}"))
             })
     }
 }

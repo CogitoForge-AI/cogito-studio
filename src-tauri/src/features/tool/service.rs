@@ -1,6 +1,8 @@
+use super::ask_user;
 use super::internal::InternalToolService;
 use super::mcp_client::MCPClientService;
 use crate::error::AppError;
+use crate::features::harness::tool_execution_context::ToolExecutionContext;
 use crate::features::mcp_connection::MCPConnectionService;
 use crate::features::tool::models::{MCPTool, UnifiedToolInfo};
 use crate::features::workspace::settings::WorkspaceSettingsService;
@@ -119,6 +121,7 @@ impl ToolService {
         connection_id: &str,
         tool_name: &str,
         arguments: serde_json::Value,
+        context: Option<&ToolExecutionContext>,
     ) -> Result<serde_json::Value, AppError> {
         // Track tool execution start
         crate::lib::sentry_helpers::add_breadcrumb(
@@ -135,6 +138,14 @@ impl ToolService {
                 "write_file" => InternalToolService::write_file(arguments).await,
                 "list_dir" => InternalToolService::list_dir(arguments).await,
                 "run_command" => InternalToolService::run_command(arguments, &self.app).await,
+                "ask_user" => {
+                    let ctx = context.ok_or_else(|| {
+                        AppError::Validation(
+                            "ask_user requires tool execution context".to_string(),
+                        )
+                    })?;
+                    ask_user::ask_user(arguments, ctx).await
+                }
                 _ => Err(AppError::Validation(format!(
                     "Unknown internal tool: {tool_name}"
                 ))),
@@ -212,6 +223,9 @@ impl ToolService {
         } else {
             std::collections::HashMap::new()
         };
+
+        // ask_user is always available when tools are supported
+        mcp_tool_map.insert("ask_user".to_string(), "builtin".to_string());
 
         // Add internal tools to map if enabled
         if workspace_settings.internal_tools_enabled == Some(1) {

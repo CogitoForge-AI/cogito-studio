@@ -24,6 +24,7 @@ export const TauriEvents = {
   TOOL_EXECUTION_COMPLETED: 'tool-execution-completed',
   TOOL_EXECUTION_ERROR: 'tool-execution-error',
   TOOL_PERMISSION_REQUEST: 'tool-permission-request',
+  USER_QUESTION_REQUEST: 'user-question-request',
 
   // Agent events
   AGENT_LOOP_ITERATION: 'agent-loop-iteration',

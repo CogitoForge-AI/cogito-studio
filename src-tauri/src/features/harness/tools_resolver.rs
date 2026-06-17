@@ -1,5 +1,6 @@
 use crate::error::AppError;
 use crate::features::agent::manager::AgentManager;
+use crate::features::tool::ask_user::get_ask_user_tool;
 use crate::features::tool::service::ToolService;
 use crate::models::llm_types::ChatCompletionTool;
 use rust_mcp_sdk::McpClient;
@@ -9,6 +10,19 @@ use tauri::AppHandle;
 pub struct ToolContext {
     pub tools: Option<Vec<ChatCompletionTool>>,
     pub system_prompt_override: Option<String>,
+}
+
+fn model_supports_tools(model: &str) -> bool {
+    let model_lower = model.to_lowercase();
+    model_lower.contains("qwen")
+        || model_lower.contains("gemini")
+        || model_lower.contains("gpt-oss")
+}
+
+fn append_ask_user_tool(tools: &mut Vec<ChatCompletionTool>) {
+    if !tools.iter().any(|t| t.function.name == "ask_user") {
+        tools.push(get_ask_user_tool());
+    }
 }
 
 pub async fn resolve_tool_context(
@@ -30,7 +44,7 @@ pub async fn resolve_tool_context(
             .await
             .map_err(|e| AppError::Generic(e.to_string()))?;
 
-        let agent_tools: Vec<ChatCompletionTool> = tool_result
+        let mut agent_tools: Vec<ChatCompletionTool> = tool_result
             .tools
             .into_iter()
             .map(|t| ChatCompletionTool {
@@ -45,28 +59,34 @@ pub async fn resolve_tool_context(
             })
             .collect();
 
+        if model_supports_tools(model) {
+            append_ask_user_tool(&mut agent_tools);
+        }
+
         let instructions = agent_manager
             .get_agent_instructions(agent_id)
             .map_err(|e| AppError::Generic(e.to_string()))?;
 
         return Ok(ToolContext {
-            tools: Some(agent_tools),
+            tools: if agent_tools.is_empty() {
+                None
+            } else {
+                Some(agent_tools)
+            },
             system_prompt_override: Some(instructions),
         });
     }
 
-    let supports_tools = model.to_lowercase().contains("qwen")
-        || model.to_lowercase().contains("gemini")
-        || model.to_lowercase().contains("gpt-oss");
-
-    if !supports_tools {
+    if !model_supports_tools(model) {
         return Ok(ToolContext {
             tools: None,
             system_prompt_override: None,
         });
     }
 
-    let tools = tool_service.get_tools_for_workspace(workspace_id)?;
+    let mut tools = tool_service.get_tools_for_workspace(workspace_id)?;
+    append_ask_user_tool(&mut tools);
+
     Ok(ToolContext {
         tools: if tools.is_empty() { None } else { Some(tools) },
         system_prompt_override: None,

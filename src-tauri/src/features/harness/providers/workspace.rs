@@ -1,10 +1,12 @@
 //! Executes tools for workspace context (MCP + internal).
 
 use crate::error::AppError;
+use crate::features::harness::tool_execution_context::ToolExecutionContext;
 use crate::features::tool::service::ToolService;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::broadcast;
 
 pub struct WorkspaceToolExecutor {
@@ -29,6 +31,8 @@ impl WorkspaceToolExecutor {
         tool_name: &str,
         arguments_str: &str,
         cancellation_rx: &mut broadcast::Receiver<()>,
+        timeout_secs: Option<u64>,
+        context: &ToolExecutionContext,
     ) -> Result<Value, AppError> {
         let connection_id = self
             .tool_to_connection
@@ -49,21 +53,32 @@ impl WorkspaceToolExecutor {
             })?
         };
 
-        let tool_exec_future =
-            self.tool_service
-                .execute_tool(connection_id, tool_name, arguments);
+        let tool_exec_future = self.tool_service.execute_tool(
+            connection_id,
+            tool_name,
+            arguments,
+            Some(context),
+        );
 
-        tokio::select! {
-            result = tokio::time::timeout(tokio::time::Duration::from_secs(60), tool_exec_future) => {
-                match result {
-                    Ok(r) => r,
-                    Err(_) => Err(AppError::Generic(
-                        "Tool execution timed out after 60 seconds".to_string(),
-                    )),
+        match timeout_secs {
+            None => {
+                tokio::select! {
+                    result = tool_exec_future => result,
+                    _ = cancellation_rx.recv() => Err(AppError::Cancelled),
                 }
             }
-            _ = cancellation_rx.recv() => {
-                Err(AppError::Cancelled)
+            Some(secs) => {
+                tokio::select! {
+                    result = tokio::time::timeout(Duration::from_secs(secs), tool_exec_future) => {
+                        match result {
+                            Ok(r) => r,
+                            Err(_) => Err(AppError::Generic(
+                                format!("Tool execution timed out after {secs} seconds"),
+                            )),
+                        }
+                    }
+                    _ = cancellation_rx.recv() => Err(AppError::Cancelled),
+                }
             }
         }
     }

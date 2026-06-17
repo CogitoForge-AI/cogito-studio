@@ -66,6 +66,10 @@ pub struct AppState {
     // Tool permission state: message_id -> oneshot sender for approval response
     pub pending_tool_permissions: Arc<Mutex<HashMap<String, oneshot::Sender<PermissionDecision>>>>,
 
+    // Ask user tool: tool_call_id -> pending question request
+    pub pending_user_questions:
+        Arc<Mutex<HashMap<String, crate::state::user_question::PendingUserQuestion>>>,
+
     // Agent Manager
     pub agent_manager: Arc<crate::features::agent::manager::AgentManager>,
 
@@ -197,6 +201,7 @@ impl AppState {
             prompt_service,
             note_service,
             pending_tool_permissions: Arc::new(Mutex::new(HashMap::new())),
+            pending_user_questions: Arc::new(Mutex::new(HashMap::new())),
             agent_manager,
             skill_service,
         })

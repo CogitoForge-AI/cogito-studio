@@ -37,6 +37,7 @@ export { useExportChat } from './hooks/useExportChat';
 export { useChatStreaming } from './hooks/useChatStreaming';
 export { useAgentMention } from './hooks/useAgentMention';
 export { useToolPermission } from './hooks/useToolPermission';
+export { useAskUser } from './hooks/useAskUser';
 export { useChatScroll } from './hooks/useChatScroll';
 export { useMessageListState } from './hooks/useMessageListState';
 export { useChatSubmit } from './hooks/useChatSubmit';

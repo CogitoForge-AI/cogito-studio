@@ -174,6 +174,7 @@ pub fn run() {
             features::chat::commands::generate_chat_title,
             features::chat::commands::edit_and_resend_message,
             features::chat::commands::respond_tool_permission,
+            features::chat::commands::respond_user_question,
             // Message commands
             features::message::commands::create_message,
             features::message::commands::get_messages,

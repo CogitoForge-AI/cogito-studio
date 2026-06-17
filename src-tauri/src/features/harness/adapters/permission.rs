@@ -22,6 +22,9 @@ pub async fn filter_tool_permissions(
         };
 
     let require_permission = tool_calls.iter().any(|tc| {
+        if tc.function.name == "ask_user" {
+            return false;
+        }
         matches!(
             tool_permission_config
                 .get(&tc.function.name)

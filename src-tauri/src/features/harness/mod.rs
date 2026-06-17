@@ -3,6 +3,7 @@
 //! Architecture reference: `harness.py` at repo root.
 #![allow(dead_code)] // mock/stub components retained for future implementation
 
+pub mod tool_execution_context;
 pub mod adapters;
 pub mod context;
 pub mod factory;

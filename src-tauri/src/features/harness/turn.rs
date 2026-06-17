@@ -3,6 +3,7 @@ use crate::features::harness::intent_router::IntentRouter;
 use crate::features::harness::loop_detector::LoopDetector;
 use crate::features::harness::providers::agent::AgentToolExecutor;
 use crate::features::harness::providers::workspace::WorkspaceToolExecutor;
+use crate::features::harness::tool_execution_context::ToolExecutionContext;
 use crate::features::harness::traits::HarnessDeps;
 use crate::features::harness::types::{TurnInput, TurnOutput};
 use crate::models::llm_types::{
@@ -309,14 +310,10 @@ impl ConversationTurnController {
             None
         };
 
-        let workspace_executor = if agent_executor.is_none() {
-            Some(WorkspaceToolExecutor::new(
-                self.deps.tool_service.clone(),
-                workspace_id,
-            )?)
-        } else {
-            None
-        };
+        let workspace_executor = WorkspaceToolExecutor::new(
+            self.deps.tool_service.clone(),
+            workspace_id,
+        )?;
 
         for tool_call in tool_calls {
             self.loop_detector.record(
@@ -337,7 +334,7 @@ impl ConversationTurnController {
             let tool_call_data = serde_json::json!({
                 "name": tool_call.function.name,
                 "arguments": tool_call.function.arguments,
-                "status": "executing"
+                "status": if tool_call.function.name == "ask_user" { "waiting_for_user" } else { "executing" }
             });
 
             session_store.create_tool_call_message(
@@ -354,22 +351,41 @@ impl ConversationTurnController {
                     assistant_message_id,
                     &tool_call.id,
                     &tool_call.function.name,
-                    "executing",
+                    if tool_call.function.name == "ask_user" {
+                        "waiting_for_user"
+                    } else {
+                        "executing"
+                    },
                     None,
                     None,
                     app,
                 )
                 .await?;
 
-            let execution_result = if let Some(ref executor) = agent_executor {
-                executor
+            let timeout_secs = if tool_call.function.name == "ask_user" {
+                None
+            } else {
+                Some(60)
+            };
+
+            let context = ToolExecutionContext {
+                app: app.clone(),
+                chat_id: chat_id.to_string(),
+                message_id: assistant_message_id.to_string(),
+                tool_call_id: tool_call.id.clone(),
+            };
+
+            let execution_result = if tool_call.function.name == "ask_user" {
+                workspace_executor
                     .execute(
                         &tool_call.function.name,
                         &tool_call.function.arguments,
                         cancellation_rx,
+                        timeout_secs,
+                        &context,
                     )
                     .await
-            } else if let Some(ref executor) = workspace_executor {
+            } else if let Some(ref executor) = agent_executor {
                 executor
                     .execute(
                         &tool_call.function.name,
@@ -378,7 +394,15 @@ impl ConversationTurnController {
                     )
                     .await
             } else {
-                Err(AppError::Generic("No tool executor available".to_string()))
+                workspace_executor
+                    .execute(
+                        &tool_call.function.name,
+                        &tool_call.function.arguments,
+                        cancellation_rx,
+                        timeout_secs,
+                        &context,
+                    )
+                    .await
             };
 
             let result = match execution_result {

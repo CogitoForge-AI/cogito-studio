@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
+import { AskUserPanel } from './AskUserPanel';
 import { AgentChatHistoryDialog } from '@/features/agent';
 import { ImagePreviewDialog } from '@/ui/molecules/ImagePreviewDialog';
 import { useMessages } from '../../hooks/useMessages';
+import { useAskUser } from '../../hooks/useAskUser';
 import { useWorkspaces } from '@/features/workspace';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { MAX_MESSAGE_LENGTH } from '@/lib/constants';
@@ -78,6 +80,10 @@ export function ChatArea() {
   } = useMessages(selectedChatId);
 
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [isSubmittingAskUser, setIsSubmittingAskUser] = useState(false);
+
+  const { pendingRequestForChat, hasPendingAskUser, respondUserQuestion } =
+    useAskUser();
 
   const handleEditMessage = (messageId: string | null) => {
     if (!messageId) {
@@ -376,6 +382,22 @@ export function ChatArea() {
     }
   };
 
+  const handleAskUserSubmit = async (
+    toolCallId: string,
+    answers: Parameters<typeof respondUserQuestion>[1]
+  ) => {
+    setIsSubmittingAskUser(true);
+    try {
+      await respondUserQuestion(toolCallId, answers);
+    } catch {
+      dispatch(showError(t('askUser.submitError', { ns: 'chat' })));
+    } finally {
+      setIsSubmittingAskUser(false);
+    }
+  };
+
+  const chatInputDisabled = hasPendingAskUser || isSubmittingAskUser;
+
   if (messages.length === 0) {
     // Empty state: Show slogan and center the input
     return (
@@ -392,12 +414,19 @@ export function ChatArea() {
           </p>
         </div>
         <div className={cn('w-full', CHAT_WIDTH_CLASSES)}>
+          {pendingRequestForChat && (
+            <AskUserPanel
+              request={pendingRequestForChat}
+              onSubmit={handleAskUserSubmit}
+              isSubmitting={isSubmittingAskUser}
+            />
+          )}
           <ChatInput
             selectedWorkspaceId={selectedWorkspaceId}
             selectedChatId={selectedChatId}
             selectedLLMConnectionId={selectedLLMConnectionId}
             onSend={handleSend}
-            disabled={false}
+            disabled={chatInputDisabled}
             timeLeft={timeLeft}
             streamingError={selectedChatId ? streamingError : undefined}
             onRetryStreaming={handleRetryStreaming}
@@ -425,13 +454,21 @@ export function ChatArea() {
         onEditMessage={handleEditMessage}
       />
 
+      {pendingRequestForChat && (
+        <AskUserPanel
+          request={pendingRequestForChat}
+          onSubmit={handleAskUserSubmit}
+          isSubmitting={isSubmittingAskUser}
+        />
+      )}
+
       {/* Input Area */}
       <ChatInput
         selectedWorkspaceId={selectedWorkspaceId}
         selectedChatId={selectedChatId}
         selectedLLMConnectionId={selectedLLMConnectionId}
         onSend={handleSend}
-        disabled={false}
+        disabled={chatInputDisabled}
         dropdownDirection="up"
         timeLeft={timeLeft}
         streamingError={selectedChatId ? streamingError : undefined}

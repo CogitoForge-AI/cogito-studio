@@ -177,6 +177,39 @@ pub fn respond_tool_permission(
 }
 
 #[tauri::command]
+pub fn respond_user_question(
+    tool_call_id: String,
+    answers: Vec<crate::state::UserQuestionAnswerInput>,
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
+    let pending = {
+        let mut map = state.pending_user_questions.lock().map_err(|e| {
+            AppError::Generic(format!("Failed to lock pending_user_questions: {e}"))
+        })?;
+        map.remove(&tool_call_id)
+    };
+
+    let Some(pending) = pending else {
+        return Err(AppError::Validation(format!(
+            "No pending user question request found for tool_call_id {tool_call_id}"
+        )));
+    };
+
+    // Validate answers against original questions before unblocking
+    crate::features::tool::ask_user::resolve_answers_to_llm_format(&pending.questions, &answers)?;
+
+    let response = crate::state::UserQuestionResponse { answers };
+
+    pending.sender.send(response).map_err(|_| {
+        AppError::Generic(format!(
+            "Failed to send user question response for tool_call_id {tool_call_id}"
+        ))
+    })?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn generate_chat_title(
     chat_id: String,
     user_prompt: String,

@@ -147,3 +147,13 @@ pub struct ChatUpdatedEvent {
     pub chat_id: String,
     pub title: String,
 }
+
+// Ask user tool events
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UserQuestionRequestEvent {
+    pub chat_id: String,
+    pub message_id: String,
+    pub tool_call_id: String,
+    pub title: Option<String>,
+    pub questions: Vec<crate::state::UserQuestionDefinition>,
+}
