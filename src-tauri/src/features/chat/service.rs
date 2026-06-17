@@ -292,10 +292,21 @@ impl ChatService {
             agent_id: chat.agent_id.clone(),
         };
 
-        let output = self
+        let output = match self
             .harness_factory
             .process_message_turn(turn_request, app.clone(), cancellation_rx)
-            .await?;
+            .await
+        {
+            Ok(output) => output,
+            Err(AppError::Cancelled) => {
+                MessageEmitter::new(app.clone()).emit_message_cancelled(
+                    chat_id.clone(),
+                    assistant_message_id.clone(),
+                )?;
+                return Err(AppError::Cancelled);
+            }
+            Err(e) => return Err(e),
+        };
 
         Ok((output.assistant_message_id, output.content))
     }

@@ -401,11 +401,6 @@ impl GoogleProvider {
                 }
                 futures::future::pending::<()>().await;
             }, if cancellation_rx.is_some() => {
-                message_emitter.emit_message_error(
-                    chat_id.clone(),
-                    message_id.clone(),
-                    "Message cancelled by user".to_string(),
-                )?;
                 return Err(AppError::Cancelled);
             }
         } {

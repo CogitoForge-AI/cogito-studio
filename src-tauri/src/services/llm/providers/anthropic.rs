@@ -184,7 +184,6 @@ impl AnthropicProvider {
                 }
                 futures::future::pending::<()>().await;
             }, if cancellation_rx.is_some() => {
-                let _ = message_emitter.emit_message_error(chat_id, message_id, "Cancelled".into());
                 return Err(AppError::Cancelled);
             }
         } {

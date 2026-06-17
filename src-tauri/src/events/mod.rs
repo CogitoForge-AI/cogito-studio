@@ -48,6 +48,12 @@ pub struct MessageErrorEvent {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MessageCancelledEvent {
+    pub chat_id: String,
+    pub message_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MessageMetadataUpdatedEvent {
     pub chat_id: String,
     pub message_id: String,

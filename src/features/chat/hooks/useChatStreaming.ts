@@ -55,6 +55,11 @@ interface MessageErrorEvent {
   error: string;
 }
 
+interface MessageCancelledEvent {
+  chat_id: string;
+  message_id: string;
+}
+
 interface ToolCallsDetectedEvent {
   chat_id: string;
   message_id: string;
@@ -140,9 +145,42 @@ interface ChatUpdatedEvent {
 export function useChatStreaming() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('chat');
-  const hasToolCallsRef = useRef<Record<string, boolean>>({});
+  // Track the assistant message currently streaming per chat
+  const streamingMessageIdByChatRef = useRef<Record<string, string>>({});
+  // Track messages whose completion should keep streaming (agent loop continues)
+  const pendingToolLoopByMessageRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
+    const isActiveStreamingMessage = (chatId: string, messageId: string) =>
+      streamingMessageIdByChatRef.current[chatId] === messageId;
+
+    const shouldKeepStreaming = (chatId: string, messageId: string) =>
+      isActiveStreamingMessage(chatId, messageId) &&
+      pendingToolLoopByMessageRef.current[messageId];
+
+    const clearStreamingForChat = (chatId: string, messageId?: string) => {
+      if (messageId) {
+        delete pendingToolLoopByMessageRef.current[messageId];
+      }
+      delete streamingMessageIdByChatRef.current[chatId];
+      dispatch(
+        setStreamingByChatId({
+          chatId,
+          messageId: null,
+        })
+      );
+      dispatch(clearStreamingMessageId());
+    };
+
+    const maybeClearStreaming = (chatId: string, messageId: string) => {
+      if (!isActiveStreamingMessage(chatId, messageId)) {
+        return;
+      }
+      if (shouldKeepStreaming(chatId, messageId)) {
+        return;
+      }
+      clearStreamingForChat(chatId, messageId);
+    };
     // Listen to message started event
     const unlistenStarted = listenToEvent<MessageStartedEvent>(
       TauriEvents.MESSAGE_STARTED,
@@ -152,6 +190,9 @@ export function useChatStreaming() {
             { type: 'Message', id: `LIST_${payload.chat_id}` },
           ])
         );
+
+        streamingMessageIdByChatRef.current[payload.chat_id] =
+          payload.assistant_message_id;
 
         dispatch(
           setStreamingByChatId({
@@ -274,17 +315,8 @@ export function useChatStreaming() {
           );
         }
 
-        // Only clear streaming if this message doesn't have tool calls
-        // If it has tool calls, the loop will continue and the next MESSAGE_STARTED will handle it
-        if (!hasToolCallsRef.current[payload.message_id]) {
-          dispatch(
-            setStreamingByChatId({
-              chatId: payload.chat_id,
-              messageId: null,
-            })
-          );
-          dispatch(clearStreamingMessageId());
-        }
+        // Only clear streaming if this is the active message and the agent loop is done
+        maybeClearStreaming(payload.chat_id, payload.message_id);
 
         dispatch(
           updateChatLastMessage({
@@ -312,13 +344,18 @@ export function useChatStreaming() {
           )
         );
 
-        dispatch(
-          setStreamingByChatId({
-            chatId: payload.chat_id,
-            messageId: null,
-          })
-        );
-        dispatch(clearStreamingMessageId());
+        if (isActiveStreamingMessage(payload.chat_id, payload.message_id)) {
+          clearStreamingForChat(payload.chat_id, payload.message_id);
+        }
+      }
+    );
+
+    const unlistenCancelled = listenToEvent<MessageCancelledEvent>(
+      TauriEvents.MESSAGE_CANCELLED,
+      (payload) => {
+        if (isActiveStreamingMessage(payload.chat_id, payload.message_id)) {
+          clearStreamingForChat(payload.chat_id, payload.message_id);
+        }
       }
     );
 
@@ -333,16 +370,8 @@ export function useChatStreaming() {
           ])
         );
 
-        // Only clear streaming if this message doesn't have tool calls
-        if (!hasToolCallsRef.current[payload.message_id]) {
-          dispatch(
-            setStreamingByChatId({
-              chatId: payload.chat_id,
-              messageId: null,
-            })
-          );
-          dispatch(clearStreamingMessageId());
-        }
+        // Only clear streaming for the active message when the agent loop is done
+        maybeClearStreaming(payload.chat_id, payload.message_id);
 
         // Only show success toast for agent tasks (not for image generation)
         // Agent tasks have specific metadata structure, images are just in metadata
@@ -375,7 +404,7 @@ export function useChatStreaming() {
         );
 
         if (payload.tool_calls && payload.tool_calls.length > 0) {
-          hasToolCallsRef.current[payload.message_id] = true;
+          pendingToolLoopByMessageRef.current[payload.message_id] = true;
         }
       }
     );
@@ -414,15 +443,10 @@ export function useChatStreaming() {
           ])
         );
 
-        // Clear streaming state when tool execution fails
-        // This ensures UI updates and cancel button works
-        dispatch(
-          setStreamingByChatId({
-            chatId: payload.chat_id,
-            messageId: null,
-          })
-        );
-        dispatch(clearStreamingMessageId());
+        // Clear streaming when tool execution fails for the active message
+        if (isActiveStreamingMessage(payload.chat_id, payload.message_id)) {
+          clearStreamingForChat(payload.chat_id, payload.message_id);
+        }
       }
     );
 
@@ -490,6 +514,7 @@ export function useChatStreaming() {
       unlistenThinkingChunk.then((fn) => fn());
       unlistenComplete.then((fn) => fn());
       unlistenError.then((fn) => fn());
+      unlistenCancelled.then((fn) => fn());
       unlistenToolCalls.then((fn) => fn());
       unlistenToolExecutionStarted.then((fn) => fn());
       unlistenToolExecutionProgress.then((fn) => fn());

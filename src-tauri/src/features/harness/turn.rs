@@ -214,6 +214,7 @@ impl ConversationTurnController {
                         .await
                     {
                         Ok(results) => results,
+                        Err(AppError::Cancelled) => return Err(AppError::Cancelled),
                         Err(e) => {
                             tracing::error!(
                                 chat_id = %chat_id,
@@ -436,6 +437,9 @@ impl ConversationTurnController {
                     result
                 }
                 Err(e) => {
+                    if matches!(e, AppError::Cancelled) {
+                        return Err(AppError::Cancelled);
+                    }
                     failed_count += 1;
                     let error_msg = e.to_string();
 
