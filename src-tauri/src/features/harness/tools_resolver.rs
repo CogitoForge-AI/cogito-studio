@@ -2,7 +2,7 @@ use crate::error::AppError;
 use crate::features::agent::manager::AgentManager;
 use crate::features::tool::ask_user::get_ask_user_tool;
 use crate::features::tool::service::ToolService;
-use crate::models::llm_types::ChatCompletionTool;
+use crate::models::llm_types::{model_supports_tools, ChatCompletionTool};
 use rust_mcp_sdk::McpClient;
 use tauri::AppHandle;
 
@@ -10,13 +10,6 @@ use tauri::AppHandle;
 pub struct ToolContext {
     pub tools: Option<Vec<ChatCompletionTool>>,
     pub system_prompt_override: Option<String>,
-}
-
-fn model_supports_tools(model: &str) -> bool {
-    let model_lower = model.to_lowercase();
-    model_lower.contains("qwen")
-        || model_lower.contains("gemini")
-        || model_lower.contains("gpt-oss")
 }
 
 fn append_ask_user_tool(tools: &mut Vec<ChatCompletionTool>) {

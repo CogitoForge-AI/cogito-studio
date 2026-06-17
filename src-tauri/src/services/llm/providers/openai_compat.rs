@@ -24,8 +24,7 @@ impl OpenAICompatProvider {
         let clean_id = model_id.split('/').next_back().unwrap_or(model_id);
         let model_lower = clean_id.to_lowercase();
 
-        // OpenAI-compatible models that support tools
-        let supports_tools = model_lower.contains("gpt") || model_lower.contains("qwen");
+        let supports_tools = crate::models::llm_types::model_supports_tools(model_id);
 
         // Models that support thinking/reasoning:
         // - GPT-o1 series

@@ -1,5 +1,19 @@
 use serde::{Deserialize, Serialize};
 
+/// Returns whether a model is known to support tool/function calling.
+pub fn model_supports_tools(model_id: &str) -> bool {
+    let clean_id = model_id.split('/').next_back().unwrap_or(model_id);
+    let model_lower = clean_id.to_lowercase();
+
+    model_lower.contains("gpt")
+        || model_lower.contains("qwen")
+        || model_lower.contains("gemini")
+        || model_lower.contains("claude")
+        || model_lower.contains("minimax")
+        || model_lower.starts_with("abab")
+        || model_lower.contains("deepseek")
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LLMModel {
     pub id: String,
@@ -231,4 +245,25 @@ pub struct SSEToolCall {
 pub struct SSEToolCallFunction {
     pub name: Option<String>,
     pub arguments: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::model_supports_tools;
+
+    #[test]
+    fn model_supports_tools_includes_minimax_models() {
+        assert!(model_supports_tools("MiniMax-Text-01"));
+        assert!(model_supports_tools("MiniMax-M1"));
+        assert!(model_supports_tools("abab6.5s-chat"));
+        assert!(model_supports_tools("openrouter/minimax-m1"));
+    }
+
+    #[test]
+    fn model_supports_tools_includes_common_providers() {
+        assert!(model_supports_tools("gpt-4o"));
+        assert!(model_supports_tools("qwen-plus"));
+        assert!(model_supports_tools("gemini-2.0-flash"));
+        assert!(model_supports_tools("deepseek-chat"));
+    }
 }

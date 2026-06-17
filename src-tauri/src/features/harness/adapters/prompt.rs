@@ -3,7 +3,8 @@ use crate::features::harness::adapters::files::{build_user_content_from_parts, e
 use crate::features::harness::traits::{MessageBuilder, PromptProvider};
 use crate::features::harness::types::{HarnessMessages, MessageBuildContext, PromptContext};
 use crate::features::skill::SkillService;
-use crate::models::llm_types::{AssistantContent, ChatMessage};
+use crate::models::llm_types::{AssistantContent, ChatMessage, ToolCall, ToolCallFunction};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct NexoPromptProvider {
@@ -76,6 +77,7 @@ impl NexoMessageBuilder {
 impl MessageBuilder for NexoMessageBuilder {
     fn build_messages(&self, ctx: &MessageBuildContext<'_>) -> Result<HarnessMessages, AppError> {
         let mut api_messages: Vec<ChatMessage> = Vec::new();
+        let assistant_tool_calls = collect_assistant_tool_calls(ctx.existing_messages);
 
         let system_message = self.prompt_provider.build_system_prompt(&ctx.prompt_ctx)?;
 
@@ -136,7 +138,7 @@ impl MessageBuilder for NexoMessageBuilder {
                 }
                 "assistant" => ChatMessage::Assistant {
                     content: AssistantContent::Text(msg.content.clone()),
-                    tool_calls: None,
+                    tool_calls: assistant_tool_calls.get(&msg.id).cloned(),
                 },
                 "tool" => {
                     if let Some(tool_call_id) = &msg.tool_call_id {
@@ -169,6 +171,62 @@ impl MessageBuilder for NexoMessageBuilder {
 
         Ok(api_messages)
     }
+}
+
+fn collect_assistant_tool_calls(
+    existing_messages: &[crate::features::message::Message],
+) -> HashMap<String, Vec<ToolCall>> {
+    let mut by_assistant: HashMap<String, Vec<ToolCall>> = HashMap::new();
+
+    for msg in existing_messages {
+        if msg.role != "tool_call" {
+            continue;
+        }
+
+        let Some(assistant_message_id) = msg.assistant_message_id.as_ref() else {
+            continue;
+        };
+
+        let tool_call_id = msg
+            .id
+            .strip_prefix("tool_call_")
+            .unwrap_or(&msg.id)
+            .to_string();
+
+        let payload = serde_json::from_str::<serde_json::Value>(&msg.content).ok();
+        let name = payload
+            .as_ref()
+            .and_then(|v| v.get("name"))
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        let arguments = payload
+            .as_ref()
+            .and_then(|v| v.get("arguments"))
+            .and_then(|a| {
+                if let Some(s) = a.as_str() {
+                    Some(s.to_string())
+                } else {
+                    serde_json::to_string(a).ok()
+                }
+            })
+            .unwrap_or_else(|| "{}".to_string());
+
+        if name.is_empty() {
+            continue;
+        }
+
+        by_assistant
+            .entry(assistant_message_id.clone())
+            .or_default()
+            .push(ToolCall {
+                id: tool_call_id,
+                r#type: "function".to_string(),
+                function: ToolCallFunction { name, arguments },
+            });
+    }
+
+    by_assistant
 }
 
 #[cfg(test)]
@@ -234,5 +292,89 @@ mod tests {
 
         let messages = builder.build_messages(&ctx).expect("build");
         assert_eq!(messages.len(), 2);
+    }
+
+    #[test]
+    fn build_messages_reconstructs_assistant_tool_calls() {
+        let builder = NexoMessageBuilder::new(
+            Arc::new(StubPrompt),
+            Arc::new(DefaultFileContentLoader),
+        );
+
+        let settings = WorkspaceSettings {
+            workspace_id: "ws1".to_string(),
+            llm_connection_id: None,
+            system_message: None,
+            mcp_tool_ids: None,
+            stream_enabled: None,
+            default_model: None,
+            tool_permission_config: None,
+            created_at: 0,
+            updated_at: 0,
+            max_agent_iterations: None,
+            internal_tools_enabled: None,
+            selected_skill_ids: None,
+        };
+
+        let existing = vec![
+            crate::features::message::Message {
+                id: "a1".to_string(),
+                chat_id: "c1".to_string(),
+                role: "assistant".to_string(),
+                content: "".to_string(),
+                timestamp: 0,
+                assistant_message_id: None,
+                tool_call_id: None,
+                metadata: None,
+                reasoning: None,
+            },
+            crate::features::message::Message {
+                id: "tool_call_call_123".to_string(),
+                chat_id: "c1".to_string(),
+                role: "tool_call".to_string(),
+                content: "{\"name\":\"list_processes\",\"arguments\":\"{\\\"limit\\\":5}\"}"
+                    .to_string(),
+                timestamp: 1,
+                assistant_message_id: Some("a1".to_string()),
+                tool_call_id: None,
+                metadata: None,
+                reasoning: None,
+            },
+            crate::features::message::Message {
+                id: "t1".to_string(),
+                chat_id: "c1".to_string(),
+                role: "tool".to_string(),
+                content: "{\"ok\":true}".to_string(),
+                timestamp: 1,
+                assistant_message_id: None,
+                tool_call_id: Some("call_123".to_string()),
+                metadata: None,
+                reasoning: None,
+            },
+        ];
+
+        let ctx = MessageBuildContext {
+            prompt_ctx: PromptContext {
+                workspace_settings: &settings,
+                system_prompt_override: None,
+                provider: Some("openai"),
+            },
+            existing_messages: &existing,
+            user_content: "ve bieu do",
+            user_files: None,
+            user_metadata: None,
+        };
+
+        let messages = builder.build_messages(&ctx).expect("build");
+
+        match &messages[1] {
+            ChatMessage::Assistant { tool_calls, .. } => {
+                let calls = tool_calls.clone().unwrap_or_default();
+                assert_eq!(calls.len(), 1);
+                assert_eq!(calls[0].id, "call_123");
+                assert_eq!(calls[0].function.name, "list_processes");
+            }
+            _ => panic!("expected assistant message with tool calls"),
+        }
     }
 }
