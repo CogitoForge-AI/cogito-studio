@@ -16,7 +16,6 @@ import { Switch } from '@/ui/atoms/switch';
 import { Button } from '@/ui/atoms/button/button';
 import { Separator } from '@/ui/atoms/separator';
 import { useAppSettings } from '@/hooks/useAppSettings';
-import { BrowserDemoPanel } from '@/features/browser/ui/BrowserDemoPanel';
 import i18n from '@/i18n/config';
 
 type Theme =
@@ -191,9 +190,6 @@ export function AppSettings() {
           </div>
         </CollapsibleContent>
       </Collapsible>
-
-      <Separator />
-      <BrowserDemoPanel />
     </div>
   );
 }

@@ -14,12 +14,6 @@ vi.mock('lucide-react', () => ({
   Palette: () => <div data-testid="palette-icon" />,
   FlaskConical: () => <div data-testid="flask-icon" />,
   ChevronRight: () => <div data-testid="chevron-icon" />,
-  Plus: () => <div data-testid="plus-icon" />,
-  ArrowLeft: () => <div data-testid="arrow-left-icon" />,
-  ArrowRight: () => <div data-testid="arrow-right-icon" />,
-  RotateCw: () => <div data-testid="rotate-icon" />,
-  X: () => <div data-testid="x-icon" />,
-  Globe: () => <div data-testid="globe-icon" />,
 }));
 
 const mockUpdateLanguage = vi.fn();
