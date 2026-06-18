@@ -9,6 +9,15 @@ pub struct ParentPlatformState {
     #[cfg(target_os = "macos")]
     /// Stable pointer to the main webview's WKWebViewConfiguration (leaked retain).
     macos_config_ptr: Option<usize>,
+    #[cfg(any(
+        target_os = "linux",
+        target_os = "dragonfly",
+        target_os = "freebsd",
+        target_os = "netbsd",
+        target_os = "openbsd"
+    ))]
+    /// Stable pointer to the main webview's WebKitWebView (leaked ref).
+    linux_webview_ptr: Option<usize>,
     initialized: bool,
 }
 
@@ -17,6 +26,14 @@ impl Default for ParentPlatformState {
         Self {
             #[cfg(target_os = "macos")]
             macos_config_ptr: None,
+            #[cfg(any(
+                target_os = "linux",
+                target_os = "dragonfly",
+                target_os = "freebsd",
+                target_os = "netbsd",
+                target_os = "openbsd"
+            ))]
+            linux_webview_ptr: None,
             initialized: false,
         }
     }
@@ -28,6 +45,16 @@ impl ParentPlatformState {
         #[cfg(target_os = "macos")]
         {
             state.macos_config_ptr = Some(read_macos_config_ptr(app)?);
+        }
+        #[cfg(any(
+            target_os = "linux",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
+        ))]
+        {
+            state.linux_webview_ptr = Some(read_linux_webview_ptr(app)?);
         }
         state.initialized = true;
         Ok(state)
@@ -43,6 +70,37 @@ impl ParentPlatformState {
             self.initialized = true;
         }
         #[cfg(not(target_os = "macos"))]
+        {
+            let _ = app;
+        }
+        Ok(())
+    }
+
+    /// Re-read the main webview handle if startup init ran before the main webview was ready.
+    pub fn ensure_linux_related_view<R: Runtime>(
+        &mut self,
+        app: &AppHandle<R>,
+    ) -> Result<(), AppError> {
+        #[cfg(any(
+            target_os = "linux",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
+        ))]
+        {
+            if self.linux_webview_ptr.is_none() {
+                self.linux_webview_ptr = Some(read_linux_webview_ptr(app)?);
+            }
+            self.initialized = true;
+        }
+        #[cfg(not(any(
+            target_os = "linux",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
+        )))]
         {
             let _ = app;
         }
@@ -88,7 +146,15 @@ impl ParentPlatformState {
             target_os = "openbsd"
         ))]
         {
-            let related = read_linux_related_view(app)?;
+            let webview_ptr = self
+                .linux_webview_ptr
+                .or_else(|| read_linux_webview_ptr(app).ok())
+                .ok_or_else(|| {
+                    AppError::Generic(
+                        "Linux WebKitWebView unavailable; cannot create child webview".into(),
+                    )
+                })?;
+            let related = linux_webview_from_ptr(webview_ptr)?;
             return Ok(builder.with_related_view(related));
         }
 
@@ -171,19 +237,48 @@ pub(crate) fn macos_config_from_ptr(
     target_os = "netbsd",
     target_os = "openbsd"
 ))]
-fn read_linux_related_view<R: Runtime>(
-    app: &AppHandle<R>,
-) -> Result<webkit2gtk::WebView, AppError> {
+fn read_linux_webview_ptr<R: Runtime>(app: &AppHandle<R>) -> Result<usize, AppError> {
     use std::sync::mpsc::channel;
+    use webkit2gtk::glib::prelude::*;
 
     let main = window_access::main_webview(app)?;
 
-    let (tx, rx) = channel();
+    let (tx, rx) = channel::<Option<usize>>();
     main.with_webview(move |wv| {
-        let _ = tx.send(wv.inner().clone());
+        let view = wv.inner();
+        let cloned = view.clone();
+        let ptr = cloned.as_ptr() as usize;
+        // Keep one ref for the app lifetime so the pointer stays valid.
+        std::mem::forget(cloned);
+        let _ = tx.send(Some(ptr));
     })
     .map_err(|e| AppError::Generic(format!("Failed to access main webview: {e}")))?;
 
     rx.recv()
-        .map_err(|_| AppError::Generic("Failed to read main webview handle".into()))
+        .map_err(|_| AppError::Generic("Failed to read main webview handle".into()))?
+        .ok_or_else(|| AppError::Generic("Main WebKitWebView is unavailable".into()))
+}
+
+#[cfg(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd"
+))]
+fn linux_webview_from_ptr(ptr: usize) -> Result<webkit2gtk::WebView, AppError> {
+    use webkit2gtk::glib::translate::FromGlibPtrNone;
+
+    if ptr == 0 {
+        return Err(AppError::Generic(
+            "Cached WebKitWebView pointer is null".into(),
+        ));
+    }
+
+    // SAFETY: pointer came from the main webview and is kept alive via leaked ref.
+    unsafe {
+        Ok(webkit2gtk::WebView::from_glib_none(
+            ptr as *mut webkit2gtk::ffi::WebKitWebView,
+        ))
+    }
 }

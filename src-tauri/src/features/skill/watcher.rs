@@ -2,7 +2,7 @@ use super::sync_coordinator::SkillSyncCoordinator;
 use crate::error::AppError;
 use notify::event::{CreateKind, EventKind, ModifyKind, RemoveKind};
 use notify::{RecursiveMode, Watcher};
-use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, FileIdMap};
+use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, RecommendedCache};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -11,7 +11,7 @@ use tauri::AppHandle;
 const DEBOUNCE_TIMEOUT: Duration = Duration::from_secs(2);
 
 pub struct SkillWatcher {
-    _debouncer: Debouncer<notify::RecommendedWatcher, FileIdMap>,
+    _debouncer: Debouncer<notify::RecommendedWatcher, RecommendedCache>,
 }
 
 impl SkillWatcher {

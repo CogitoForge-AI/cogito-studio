@@ -70,6 +70,7 @@ objc2-web-kit = "0.3"
 
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.38"
+windows = { version = "0.61", features = [] }
 
 [target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
 webkit2gtk = "2.0"

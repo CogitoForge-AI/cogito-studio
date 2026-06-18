@@ -106,6 +106,7 @@ fn eval_macos(platform: &PlatformWebview, script: &str) -> Result<String, String
 fn eval_windows(platform: &PlatformWebview, script: &str) -> Result<String, String> {
     use std::sync::{Arc, Condvar, Mutex};
     use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2;
+    use windows::core::HSTRING;
 
     let pair = Arc::new((Mutex::new(None), Condvar::new()));
     let pair2 = pair.clone();
@@ -118,11 +119,11 @@ fn eval_windows(platform: &PlatformWebview, script: &str) -> Result<String, Stri
             .map_err(|e| format!("CoreWebView2 failed: {e}"))?;
 
         let handler = webview2_com::ExecuteScriptCompletedHandler::create(Box::new(
-            move |result, _| {
+            move |error_code, result_json| {
                 let mut guard = pair2.0.lock().unwrap();
                 *guard = Some(
-                    result
-                        .map(|s| s.to_string())
+                    error_code
+                        .map(|()| result_json)
                         .map_err(|e| format!("ExecuteScript failed: {e}")),
                 );
                 pair2.1.notify_one();
@@ -131,10 +132,7 @@ fn eval_windows(platform: &PlatformWebview, script: &str) -> Result<String, Stri
         ));
 
         webview
-            .ExecuteScript(
-                &webview2_com::windows::core::HSTRING::from(script.as_str()),
-                &handler,
-            )
+            .ExecuteScript(&HSTRING::from(script.as_str()), &handler)
             .map_err(|e| format!("ExecuteScript invoke failed: {e}"))?;
     }
 
@@ -157,40 +155,32 @@ fn eval_windows(platform: &PlatformWebview, script: &str) -> Result<String, Stri
     target_os = "openbsd"
 ))]
 fn eval_linux(platform: &PlatformWebview, script: &str) -> Result<String, String> {
-    use std::cell::RefCell;
-    use std::rc::Rc;
     use std::sync::{Arc, Condvar, Mutex};
-    use webkit2gtk::glib::clone;
-    use webkit2gtk::prelude::WebViewExt;
-    use webkit2gtk::JavascriptResult;
+    use webkit2gtk::WebViewExt;
 
     let pair = Arc::new((Mutex::new(None), Condvar::new()));
     let pair2 = pair.clone();
     let script = script.to_string();
-    let result_cell: Rc<RefCell<Option<Result<String, String>>>> = Rc::new(RefCell::new(None));
 
-    platform.inner().evaluate_javascript(
+    platform.inner().run_javascript(
         &script,
-        None,
-        None,
-        "nexo-browser",
-        clone!(@strong result_cell, @strong pair2 => move |value| {
-            let parsed = match value {
-                Some(result) => {
-                    let js = result
-                        .downcast_ref::<JavascriptResult>()
-                        .and_then(|r| r.value())
-                        .map(|v| v.to_string())
+        None::<&webkit2gtk::gio::Cancellable>,
+        move |result| {
+            let parsed = match result {
+                Ok(js_result) => {
+                    let js = js_result
+                        .js_value()
+                        .and_then(|value| value.to_json(0))
+                        .map(|value| value.to_string())
                         .unwrap_or_default();
                     Ok(js)
                 }
-                None => Err("JavaScript eval returned no value".into()),
+                Err(err) => Err(format!("JavaScript eval failed: {err}")),
             };
-            *result_cell.borrow_mut() = Some(parsed.clone());
             let mut guard = pair2.0.lock().unwrap();
             *guard = Some(parsed);
             pair2.1.notify_one();
-        }),
+        },
     );
 
     let (lock, cvar) = &*pair;

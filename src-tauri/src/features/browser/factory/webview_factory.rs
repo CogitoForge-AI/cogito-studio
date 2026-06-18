@@ -549,6 +549,7 @@ impl WebviewFactory {
                 .lock()
                 .map_err(|_| AppError::Generic("Browser platform lock poisoned".into()))?;
             platform.ensure_macos_config(&self.app)?;
+            platform.ensure_linux_related_view(&self.app)?;
             platform.configure_builder(&self.app, builder)?
         };
 
