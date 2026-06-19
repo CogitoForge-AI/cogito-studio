@@ -11,6 +11,11 @@ import { addPermissionRequest } from '@/features/tools/state/toolPermissionSlice
 import { addUserQuestionRequest } from '@/features/chat/state/askUserSlice';
 import { messagesApi } from '@/features/chat/state/messagesApi';
 import { extractCodeBlocks } from '@/features/chat/lib/code-block-extractor';
+import {
+  nextToolCallTimestamp,
+  nextTurnMessageTimestamps,
+  toolCallMessageId,
+} from '@/features/chat/lib/messageTimestamps';
 import { logger } from '@/lib/logger';
 import {
   isActiveConversationPhase,
@@ -175,6 +180,61 @@ function applyTokenUsage(
   };
 }
 
+function upsertToolCallMessage(
+  dispatch: ReturnType<typeof useAppDispatch>,
+  payload: ToolExecutionProgressEvent
+) {
+  dispatch(
+    messagesApi.util.updateQueryData(
+      'getMessages',
+      payload.chat_id,
+      (draft) => {
+        const id = toolCallMessageId(payload.tool_call_id);
+        const existing = draft.find((m) => m.id === id);
+        const assistant = draft.find((m) => m.id === payload.message_id);
+        const detectedToolCall = assistant?.toolCalls?.find(
+          (toolCall) => toolCall.id === payload.tool_call_id
+        );
+
+        let argumentsValue: unknown = detectedToolCall?.arguments ?? {};
+        if (existing) {
+          try {
+            const parsed = JSON.parse(existing.content) as {
+              arguments?: unknown;
+            };
+            if (parsed.arguments !== undefined) {
+              argumentsValue = parsed.arguments;
+            }
+          } catch {
+            // Keep detected tool call arguments when existing content is invalid JSON.
+          }
+        }
+
+        const content = JSON.stringify({
+          name: payload.tool_name,
+          arguments: argumentsValue,
+          status: payload.status,
+          ...(payload.result !== undefined ? { result: payload.result } : {}),
+          ...(payload.error ? { error: payload.error } : {}),
+        });
+
+        if (existing) {
+          existing.content = content;
+          return;
+        }
+
+        draft.push({
+          id,
+          role: 'tool_call',
+          content,
+          timestamp: nextToolCallTimestamp(draft, payload.message_id),
+          assistantMessageId: payload.message_id,
+        });
+      }
+    )
+  );
+}
+
 function upsertTurnMessages(
   dispatch: ReturnType<typeof useAppDispatch>,
   chatId: string,
@@ -183,21 +243,27 @@ function upsertTurnMessages(
 ) {
   dispatch(
     messagesApi.util.updateQueryData('getMessages', chatId, (draft) => {
-      const now = Date.now();
-      if (!draft.some((m) => m.id === userMessageId)) {
+      const needsUser = !draft.some((m) => m.id === userMessageId);
+      const needsAssistant = !draft.some((m) => m.id === assistantMessageId);
+      const { userTimestamp, assistantTimestamp } = nextTurnMessageTimestamps(
+        draft,
+        needsUser
+      );
+
+      if (needsUser) {
         draft.push({
           id: userMessageId,
           role: 'user',
           content: '',
-          timestamp: now,
+          timestamp: userTimestamp,
         });
       }
-      if (!draft.some((m) => m.id === assistantMessageId)) {
+      if (needsAssistant) {
         draft.push({
           id: assistantMessageId,
           role: 'assistant',
           content: '',
-          timestamp: now + 1,
+          timestamp: assistantTimestamp,
         });
       }
     })
@@ -442,7 +508,9 @@ export function useConversationEventProjector() {
     const unlistenToolExecutionProgress =
       listenToEvent<ToolExecutionProgressEvent>(
         TauriEvents.TOOL_EXECUTION_PROGRESS,
-        () => {}
+        (payload) => {
+          upsertToolCallMessage(dispatch, payload);
+        }
       );
 
     const unlistenToolExecutionCompleted =

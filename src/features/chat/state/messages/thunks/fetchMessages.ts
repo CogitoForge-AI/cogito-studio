@@ -33,7 +33,7 @@ export const fetchMessages = createAsyncThunk<
         id: m.id,
         role: m.role as 'user' | 'assistant' | 'tool' | 'tool_call',
         content: m.content, // Keep original content
-        timestamp: m.timestamp * 1000, // Convert to milliseconds
+        timestamp: m.timestamp,
         assistantMessageId: m.assistant_message_id ?? undefined,
         codeBlocks: codeBlocks.length > 0 ? codeBlocks : undefined,
         reasoning: m.reasoning ?? undefined,

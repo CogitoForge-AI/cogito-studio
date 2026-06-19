@@ -8,7 +8,7 @@ interface DbMessage {
   chat_id: string;
   role: string;
   content: string;
-  timestamp: number; // Unix timestamp in seconds
+  timestamp: number; // Unix timestamp in milliseconds
   assistant_message_id: string | null;
   tool_call_id: string | null;
   reasoning: string | null;
@@ -46,7 +46,7 @@ export const messagesApi = baseApi.injectEndpoints({
             id: m.id,
             role: m.role as 'user' | 'assistant' | 'tool' | 'tool_call',
             content: m.content,
-            timestamp: m.timestamp * 1000,
+            timestamp: m.timestamp,
             assistantMessageId: m.assistant_message_id ?? undefined,
             codeBlocks: codeBlocks.length > 0 ? codeBlocks : undefined,
             reasoning: m.reasoning ?? undefined,

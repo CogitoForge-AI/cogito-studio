@@ -2,6 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
 import type { RootState } from '@/app/store';
 import { validateAndExtractState } from '../helpers/sendMessage/stateValidation';
+import { messagesApi } from '../../messagesApi';
 
 export interface StartTurnResult {
   turn_id: string;
@@ -56,6 +57,17 @@ export function createSendMessageThunkNew() {
             isThinkingEnabled && supportsThinking ? reasoningEffort : undefined,
           llmConnectionId: context.llmConnection.id,
         }
+      );
+
+      dispatch(
+        messagesApi.util.updateQueryData('getMessages', chatId, (draft) => {
+          const userMessage = draft.find(
+            (m) => m.id === result.user_message_id
+          );
+          if (userMessage) {
+            userMessage.content = content;
+          }
+        })
       );
 
       return result;
