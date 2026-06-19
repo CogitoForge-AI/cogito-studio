@@ -38,11 +38,6 @@ const SkillsManager = lazy(() =>
     default: module.SkillsManager,
   }))
 );
-const WebSearchSettings = lazy(() =>
-  import('@/features/web-search').then((module) => ({
-    default: module.WebSearchSettings,
-  }))
-);
 
 import { AppSettings } from './AppSettings';
 import { FeatureCard } from './components/FeatureCard';
@@ -68,8 +63,6 @@ export function SettingsScreen() {
         return <LLMConnections />;
       case 'mcp':
         return <MCPServerConnections />;
-      case 'web_search':
-        return <WebSearchSettings />;
       case 'usage':
         return <UsagePage />;
       case 'skills':
@@ -85,7 +78,6 @@ export function SettingsScreen() {
     { id: 'general', label: t('generalSetting') },
     { id: 'llm', label: t('llmConnections') },
     { id: 'mcp', label: t('mcpServerConnections') },
-    { id: 'web_search', label: t('webSearch') },
     { id: 'skills', label: t('skills') },
     { id: 'usage', label: 'Usage' },
     { id: 'about', label: t('about') },

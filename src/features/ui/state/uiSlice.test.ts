@@ -40,9 +40,7 @@ describe('uiSlice', () => {
     rightPanelTab: 'notes',
     browserPendingUrl: null,
     experiments: {
-      showUsage: false,
       enableWorkflowEditor: false,
-      enableRawText: false,
     },
     setupCompleted: false,
   };
@@ -103,9 +101,7 @@ describe('uiSlice', () => {
       (invokeCommand as any).mockImplementation((_cmd: string, args: any) => {
         if (args.key === 'language') return Promise.resolve('en');
         if (args.key === 'theme') return Promise.resolve('dark');
-        if (args.key === 'showUsage') return Promise.resolve('true');
         if (args.key === 'enableWorkflowEditor') return Promise.resolve('true');
-        if (args.key === 'enableRawText') return Promise.resolve('true');
         if (args.key === 'setupCompleted') return Promise.resolve('true');
         return Promise.resolve(null);
       });
@@ -117,7 +113,7 @@ describe('uiSlice', () => {
       const state = uiReducer(initialState, result as any);
       expect(state.language).toBe('en');
       expect(state.theme).toBe('dark');
-      expect(state.experiments.showUsage).toBe(true);
+      expect(state.experiments.enableWorkflowEditor).toBe(true);
       expect(state.setupCompleted).toBe(true);
     });
   });

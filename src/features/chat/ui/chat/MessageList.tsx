@@ -74,7 +74,6 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
       copiedId,
       expandedToolCalls,
       handleCopy,
-      toggleMarkdown,
       toggleToolCall,
     } = useMessageListState({
       externalMarkdownEnabled,
@@ -148,7 +147,6 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                   message={message}
                   markdownEnabled={isMarkdownEnabled}
                   isCopied={copiedId === message.id}
-                  onToggleMarkdown={toggleMarkdown}
                   onCopy={handleCopy}
                   onEdit={handleEdit}
                   onViewAgentDetails={onViewAgentDetails}
@@ -203,7 +201,6 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                   message={message}
                   markdownEnabled={isMarkdownEnabled}
                   isCopied={copiedId === message.id}
-                  onToggleMarkdown={toggleMarkdown}
                   onCopy={handleCopy}
                   onEdit={handleEdit}
                   onViewAgentDetails={onViewAgentDetails}

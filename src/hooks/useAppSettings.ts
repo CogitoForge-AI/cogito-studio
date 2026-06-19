@@ -2,9 +2,7 @@ import { useAppSelector, useAppDispatch } from '@/app/hooks';
 import {
   setLanguage,
   setTheme,
-  setShowUsage,
   setEnableWorkflowEditor,
-  setEnableRawText,
   loadAppSettings,
 } from '@/features/ui/state/uiSlice';
 
@@ -29,12 +27,8 @@ export function useAppSettings() {
   const language = useAppSelector((state) => state.ui.language);
   const theme = useAppSelector((state) => state.ui.theme);
   const loading = useAppSelector((state) => state.ui.loading);
-  const showUsage = useAppSelector((state) => state.ui.experiments.showUsage);
   const enableWorkflowEditor = useAppSelector(
     (state) => state.ui.experiments.enableWorkflowEditor
-  );
-  const enableRawText = useAppSelector(
-    (state) => state.ui.experiments.enableRawText
   );
 
   const updateLanguage = (lang: 'vi' | 'en') => {
@@ -45,16 +39,8 @@ export function useAppSettings() {
     dispatch(setTheme(newTheme));
   };
 
-  const updateShowUsage = (show: boolean) => {
-    dispatch(setShowUsage(show));
-  };
-
   const updateEnableWorkflowEditor = (enable: boolean) => {
     dispatch(setEnableWorkflowEditor(enable));
-  };
-
-  const updateEnableRawText = (enable: boolean) => {
-    dispatch(setEnableRawText(enable));
   };
 
   const reloadSettings = () => {
@@ -65,14 +51,10 @@ export function useAppSettings() {
     language,
     theme,
     loading,
-    showUsage,
     enableWorkflowEditor,
-    enableRawText,
     updateLanguage,
     updateTheme,
-    updateShowUsage,
     updateEnableWorkflowEditor,
-    updateEnableRawText,
     reloadSettings,
   };
 }

@@ -10,7 +10,6 @@ import { MessageMentions } from './MessageMentions';
 import { parseMessageMentions } from './utils/mentionUtils';
 import { useComponentPerformance } from '@/hooks/useComponentPerformance';
 import { FLOW_NODES } from '@/ui/molecules/flow/constants';
-import { useAppSettings } from '@/hooks/useAppSettings';
 import type { Message } from '../../types';
 import { parseSkillAttachment } from '../../lib/skillAttachment';
 import { SkillChip } from './SkillChip';
@@ -23,7 +22,6 @@ export interface MessageItemProps {
   isCopied: boolean;
   isStreaming: boolean;
   isLastMessage?: boolean;
-  onToggleMarkdown: (messageId: string) => void;
   onCopy: (content: string, messageId: string) => void;
   onEdit: (messageId: string) => void;
   onViewAgentDetails?: (sessionId: string, agentId: string) => void;
@@ -37,7 +35,6 @@ export const MessageItem = memo(
     isCopied,
     isStreaming,
     isLastMessage = false,
-    onToggleMarkdown,
     onCopy,
     onEdit,
     onViewAgentDetails,
@@ -50,7 +47,6 @@ export const MessageItem = memo(
     });
 
     const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
-    const { enableRawText } = useAppSettings();
 
     // Determine if message is long (more than 500 characters or more than 10 lines)
     // Memoize this calculation
@@ -87,10 +83,6 @@ export const MessageItem = memo(
     const handleCopy = useCallback(() => {
       onCopy(message.content, message.id);
     }, [message.content, message.id, onCopy]);
-
-    const handleToggleMarkdown = useCallback(() => {
-      onToggleMarkdown(message.id);
-    }, [message.id, onToggleMarkdown]);
 
     const handleEdit = useCallback(() => {
       onEdit(message.id);
@@ -301,11 +293,8 @@ export const MessageItem = memo(
             role={message.role}
             content={message.content}
             isCopied={isCopied}
-            markdownEnabled={markdownEnabled}
-            enableRawText={enableRawText}
             onEdit={handleEdit}
             onCopy={handleCopy}
-            onToggleMarkdown={handleToggleMarkdown}
             t={t}
             className={cn(
               'absolute z-10',

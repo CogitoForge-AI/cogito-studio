@@ -1,5 +1,11 @@
 import { useTranslation } from 'react-i18next';
-import { Languages, Palette, FlaskConical, ChevronRight } from 'lucide-react';
+import {
+  Languages,
+  Palette,
+  FlaskConical,
+  ChevronRight,
+  Search,
+} from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -16,6 +22,7 @@ import { Switch } from '@/ui/atoms/switch';
 import { Button } from '@/ui/atoms/button/button';
 import { Separator } from '@/ui/atoms/separator';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { WebSearchSettings } from '@/features/web-search';
 import i18n from '@/i18n/config';
 
 type Theme =
@@ -39,14 +46,10 @@ export function AppSettings() {
   const {
     language: currentLanguage,
     theme: currentTheme,
-    showUsage,
     enableWorkflowEditor,
-    enableRawText,
     updateLanguage,
     updateTheme,
-    updateShowUsage,
     updateEnableWorkflowEditor,
-    updateEnableRawText,
   } = useAppSettings();
 
   const handleLanguageChange = (lang: 'vi' | 'en') => {
@@ -59,7 +62,7 @@ export function AppSettings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-10">
       {/* Language */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
@@ -126,6 +129,19 @@ export function AppSettings() {
 
       <Separator />
 
+      {/* Web Search */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Search className="size-4 text-muted-foreground shrink-0" />
+          <h3 className="font-medium text-sm leading-none my-0">
+            {t('webSearch')}
+          </h3>
+        </div>
+        <WebSearchSettings />
+      </div>
+
+      <Separator />
+
       {/* Experiments Collapsible */}
       <Collapsible className="space-y-2">
         <CollapsibleTrigger asChild>
@@ -146,21 +162,6 @@ export function AppSettings() {
           <div className="flex items-center justify-between gap-4 p-3 border rounded-lg bg-card/50">
             <div className="space-y-1">
               <h4 className="text-sm font-medium leading-none">
-                {t('showUsage')}
-              </h4>
-              <p className="text-xs text-muted-foreground">
-                {t('showUsageDescription')}
-              </p>
-            </div>
-            <Switch
-              id="show-usage-switch"
-              checked={showUsage}
-              onCheckedChange={updateShowUsage}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-4 p-3 border rounded-lg bg-card/50">
-            <div className="space-y-1">
-              <h4 className="text-sm font-medium leading-none">
                 {t('enableWorkflowEditor')}
               </h4>
               <p className="text-xs text-muted-foreground">
@@ -171,21 +172,6 @@ export function AppSettings() {
               id="enable-workflow-editor-switch"
               checked={enableWorkflowEditor}
               onCheckedChange={updateEnableWorkflowEditor}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-4 p-3 border rounded-lg bg-card/50">
-            <div className="space-y-1">
-              <h4 className="text-sm font-medium leading-none">
-                {t('enableRawText')}
-              </h4>
-              <p className="text-xs text-muted-foreground">
-                {t('enableRawTextDescription')}
-              </p>
-            </div>
-            <Switch
-              id="enable-raw-text-switch"
-              checked={enableRawText}
-              onCheckedChange={updateEnableRawText}
             />
           </div>
         </CollapsibleContent>

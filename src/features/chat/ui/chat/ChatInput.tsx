@@ -124,7 +124,7 @@ export function ChatInput({
   } = useChatInput(selectedWorkspaceId);
 
   // Get app settings for experimental features
-  const { enableWorkflowEditor, showUsage } = useAppSettings();
+  const { enableWorkflowEditor } = useAppSettings();
 
   // Calculate active tools from workspace settings - fetching from backend for unified source of truth
   const { data: activeTools = [] } = useGetActiveToolsForWorkspaceQuery(
@@ -351,7 +351,7 @@ export function ChatInput({
     <>
       <div className="bg-background">
         <div className={cn(CHAT_WIDTH_CLASSES, 'py-2')}>
-          {showUsage && conversationTokenUsage && (
+          {conversationTokenUsage && (
             <div className="mb-1.5 flex flex-wrap gap-x-3 gap-y-1 px-1 text-xs text-muted-foreground select-text">
               {conversationTokenUsage.promptTokens !== undefined && (
                 <span>

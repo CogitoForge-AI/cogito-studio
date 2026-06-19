@@ -5,7 +5,6 @@ import {
   Info,
   BarChart,
   Wand2,
-  Search,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -36,11 +35,6 @@ export function SettingsSidebar() {
       id: 'mcp' as const,
       label: t('mcpServerConnections'),
       icon: <Server className="size-4" />,
-    },
-    {
-      id: 'web_search' as const,
-      label: t('webSearch'),
-      icon: <Search className="size-4" />,
     },
     {
       id: 'skills' as const,

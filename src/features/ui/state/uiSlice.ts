@@ -8,7 +8,6 @@ export type SettingsSection =
   | 'general'
   | 'llm'
   | 'mcp'
-  | 'web_search'
   | 'usage'
   | 'skills'
   | 'experiments'
@@ -49,9 +48,7 @@ export interface UIState {
   rightPanelTab: 'notes' | 'skills' | 'info' | 'artifacts' | 'browser';
   browserPendingUrl: string | null;
   experiments: {
-    showUsage: boolean;
     enableWorkflowEditor: boolean;
-    enableRawText: boolean;
   };
   setupCompleted: boolean;
 }
@@ -70,27 +67,15 @@ export const loadAppSettings = createAsyncThunk(
           key: 'theme',
         }),
         invokeCommand<string | null>(TauriCommands.GET_APP_SETTING, {
-          key: 'showUsage',
-        }),
-        invokeCommand<string | null>(TauriCommands.GET_APP_SETTING, {
           key: 'enableWorkflowEditor',
-        }),
-        invokeCommand<string | null>(TauriCommands.GET_APP_SETTING, {
-          key: 'enableRawText',
         }),
         invokeCommand<string | null>(TauriCommands.GET_APP_SETTING, {
           key: 'setupCompleted',
         }),
       ]);
 
-      const [
-        language,
-        theme,
-        showUsage,
-        enableWorkflowEditor,
-        enableRawText,
-        setupCompleted,
-      ] = settingsResults;
+      const [language, theme, enableWorkflowEditor, setupCompleted] =
+        settingsResults;
 
       // Validate and set language
       let finalLanguage: 'vi' | 'en' = 'vi';
@@ -137,9 +122,7 @@ export const loadAppSettings = createAsyncThunk(
         language: finalLanguage,
         theme: finalTheme,
         experiments: {
-          showUsage: showUsage === 'true' || showUsage === null, // Default to true for developer mode
           enableWorkflowEditor: enableWorkflowEditor === 'true',
-          enableRawText: enableRawText === 'true',
         },
         setupCompleted: setupCompleted === 'true',
       };
@@ -149,9 +132,7 @@ export const loadAppSettings = createAsyncThunk(
         language: 'vi' as const,
         theme: 'light' as const,
         experiments: {
-          showUsage: true,
           enableWorkflowEditor: false,
-          enableRawText: false,
         },
         setupCompleted: false,
       };
@@ -201,9 +182,7 @@ const initialState: UIState = {
   rightPanelTab: 'notes',
   browserPendingUrl: null,
   experiments: {
-    showUsage: false,
     enableWorkflowEditor: false,
-    enableRawText: false,
   },
   setupCompleted: false,
 };
@@ -314,15 +293,6 @@ const uiSlice = createSlice({
     clearBrowserPendingUrl: (state) => {
       state.browserPendingUrl = null;
     },
-    setShowUsage: (state, action: PayloadAction<boolean>) => {
-      state.experiments.showUsage = action.payload;
-      invokeCommand(TauriCommands.SAVE_APP_SETTING, {
-        key: 'showUsage',
-        value: action.payload ? 'true' : 'false',
-      }).catch((error) => {
-        logger.error('Failed to save showUsage to database:', error);
-      });
-    },
     setEnableWorkflowEditor: (state, action: PayloadAction<boolean>) => {
       state.experiments.enableWorkflowEditor = action.payload;
       invokeCommand(TauriCommands.SAVE_APP_SETTING, {
@@ -330,15 +300,6 @@ const uiSlice = createSlice({
         value: action.payload ? 'true' : 'false',
       }).catch((error) => {
         logger.error('Failed to save enableWorkflowEditor to database:', error);
-      });
-    },
-    setEnableRawText: (state, action: PayloadAction<boolean>) => {
-      state.experiments.enableRawText = action.payload;
-      invokeCommand(TauriCommands.SAVE_APP_SETTING, {
-        key: 'enableRawText',
-        value: action.payload ? 'true' : 'false',
-      }).catch((error) => {
-        logger.error('Failed to save enableRawText to database:', error);
       });
     },
     setSetupCompleted: (state, action: PayloadAction<boolean>) => {
@@ -399,9 +360,7 @@ export const {
   setRightPanelTab,
   openBrowserInRightPanel,
   clearBrowserPendingUrl,
-  setShowUsage,
   setEnableWorkflowEditor,
-  setEnableRawText,
   setSetupCompleted,
 } = uiSlice.actions;
 export default uiSlice.reducer;

@@ -12,26 +12,28 @@ vi.mock('react-i18next', () => ({
 vi.mock('lucide-react', () => ({
   Languages: () => <div data-testid="languages-icon" />,
   Palette: () => <div data-testid="palette-icon" />,
+  Search: () => <div data-testid="search-icon" />,
   FlaskConical: () => <div data-testid="flask-icon" />,
   ChevronRight: () => <div data-testid="chevron-icon" />,
 }));
 
 const mockUpdateLanguage = vi.fn();
 const mockUpdateTheme = vi.fn();
-const mockUpdateShowUsage = vi.fn();
 const mockUpdateEnableWorkflowEditor = vi.fn();
 
 vi.mock('@/hooks/useAppSettings', () => ({
   useAppSettings: () => ({
     language: 'en',
     theme: 'system',
-    showUsage: false,
     enableWorkflowEditor: false,
     updateLanguage: mockUpdateLanguage,
     updateTheme: mockUpdateTheme,
-    updateShowUsage: mockUpdateShowUsage,
     updateEnableWorkflowEditor: mockUpdateEnableWorkflowEditor,
   }),
+}));
+
+vi.mock('@/features/web-search', () => ({
+  WebSearchSettings: () => <div data-testid="web-search-settings" />,
 }));
 
 vi.mock('@/i18n/config', () => ({
@@ -86,7 +88,6 @@ vi.mock('@/ui/atoms/switch', () => ({
     onCheckedChange: (checked: boolean) => void;
     id: string;
   }) => {
-    // Extract label from id (e.g., "show-usage-switch" -> "showUsage")
     const label = id
       .replace('-switch', '')
       .split('-')
@@ -143,22 +144,25 @@ describe('AppSettings', () => {
     vi.clearAllMocks();
   });
 
-  it('renders language, theme and experiments sections', () => {
+  it('renders language, theme, web search and experiments sections', () => {
     render(<AppSettings />);
 
     expect(screen.getByText('language')).toBeInTheDocument();
     expect(screen.getByText('theme')).toBeInTheDocument();
+    expect(screen.getByText('webSearch')).toBeInTheDocument();
     expect(screen.getByText('experiments')).toBeInTheDocument();
 
     expect(screen.getByTestId('languages-icon')).toBeInTheDocument();
     expect(screen.getByTestId('palette-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('search-icon')).toBeInTheDocument();
     expect(screen.getByTestId('flask-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('web-search-settings')).toBeInTheDocument();
   });
 
   it('handles language change', async () => {
     render(<AppSettings />);
 
-    const languageSelect = screen.getAllByTestId('select-root')[0]; // First select is language
+    const languageSelect = screen.getAllByTestId('select-root')[0];
     fireEvent.change(languageSelect, { target: { value: 'vi' } });
 
     expect(mockUpdateLanguage).toHaveBeenCalledWith('vi');
@@ -167,18 +171,18 @@ describe('AppSettings', () => {
   it('handles theme change', async () => {
     render(<AppSettings />);
 
-    const themeSelect = screen.getAllByTestId('select-root')[1]; // Second select is theme
+    const themeSelect = screen.getAllByTestId('select-root')[1];
     fireEvent.change(themeSelect, { target: { value: 'dark' } });
 
     expect(mockUpdateTheme).toHaveBeenCalledWith('dark');
   });
 
-  it('handles show usage toggle', async () => {
+  it('handles workflow editor toggle', async () => {
     render(<AppSettings />);
 
-    const switchElement = screen.getByLabelText('showUsage');
+    const switchElement = screen.getByLabelText('enableWorkflowEditor');
     fireEvent.click(switchElement);
 
-    expect(mockUpdateShowUsage).toHaveBeenCalled();
+    expect(mockUpdateEnableWorkflowEditor).toHaveBeenCalled();
   });
 });

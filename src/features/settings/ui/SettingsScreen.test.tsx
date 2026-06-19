@@ -80,9 +80,7 @@ describe('SettingsScreen', () => {
           theme: 'light',
           loading: false,
           experiments: {
-            showUsage: true,
             enableWorkflowEditor: false,
-            enableRawText: false,
           },
         },
       };
@@ -108,9 +106,7 @@ describe('SettingsScreen', () => {
           theme: 'light',
           loading: false,
           experiments: {
-            showUsage: true,
             enableWorkflowEditor: false,
-            enableRawText: false,
           },
         },
       };

@@ -1,13 +1,5 @@
 import { memo } from 'react';
-import {
-  Copy,
-  Code,
-  FileText,
-  Check,
-  Pencil,
-  Volume2,
-  VolumeX,
-} from 'lucide-react';
+import { Copy, Check, Pencil, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTTS } from '@/hooks/useTTS';
 
@@ -15,11 +7,8 @@ interface MessageControlsProps {
   role: 'user' | 'assistant' | 'system' | 'tool' | 'tool_call';
   content: string;
   isCopied: boolean;
-  markdownEnabled: boolean;
-  enableRawText: boolean;
   onEdit: () => void;
   onCopy: () => void;
-  onToggleMarkdown: () => void;
   t: (key: string) => string;
   className?: string;
 }
@@ -28,11 +17,8 @@ export const MessageControls = memo(function MessageControls({
   role,
   content,
   isCopied,
-  markdownEnabled,
-  enableRawText,
   onEdit,
   onCopy,
-  onToggleMarkdown,
   t,
   className,
 }: MessageControlsProps) {
@@ -62,28 +48,13 @@ export const MessageControls = memo(function MessageControls({
         </button>
       )}
       {role === 'assistant' && (
-        <>
-          <button
-            className="p-1.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors group/btn"
-            onClick={onEdit}
-            title={t('edit') || 'Edit'}
-          >
-            <Pencil className="h-3.5 w-3.5 opacity-70 group-hover/btn:opacity-100 transition-opacity" />
-          </button>
-          {enableRawText && (
-            <button
-              className="p-1.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors group/btn"
-              onClick={onToggleMarkdown}
-              title={markdownEnabled ? t('showRawText') : t('showMarkdown')}
-            >
-              {markdownEnabled ? (
-                <FileText className="h-3.5 w-3.5 opacity-70 group-hover/btn:opacity-100 transition-opacity" />
-              ) : (
-                <Code className="h-3.5 w-3.5 opacity-70 group-hover/btn:opacity-100 transition-opacity" />
-              )}
-            </button>
-          )}
-        </>
+        <button
+          className="p-1.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors group/btn"
+          onClick={onEdit}
+          title={t('edit') || 'Edit'}
+        >
+          <Pencil className="h-3.5 w-3.5 opacity-70 group-hover/btn:opacity-100 transition-opacity" />
+        </button>
       )}
       <button
         className="p-1.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors group/btn"

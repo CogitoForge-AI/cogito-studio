@@ -16,7 +16,7 @@ describe('useAppSettings', () => {
           language: 'vi',
           theme: 'dark',
           loading: false,
-          experiments: { showUsage: true },
+          experiments: { enableWorkflowEditor: true },
         },
       })
     );
@@ -28,7 +28,7 @@ describe('useAppSettings', () => {
 
     expect(result.current.language).toBe('vi');
     expect(result.current.theme).toBe('dark');
-    expect(result.current.showUsage).toBe(true);
+    expect(result.current.enableWorkflowEditor).toBe(true);
   });
 
   it('updateLanguage should dispatch setLanguage', () => {
