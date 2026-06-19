@@ -155,6 +155,7 @@ fn eval_windows(platform: &PlatformWebview, script: &str) -> Result<String, Stri
     target_os = "openbsd"
 ))]
 fn eval_linux(platform: &PlatformWebview, script: &str) -> Result<String, String> {
+    use javascriptcore::auto::value::ValueExt;
     use std::sync::{Arc, Condvar, Mutex};
     use webkit2gtk::WebViewExt;
 
