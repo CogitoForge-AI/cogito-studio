@@ -71,7 +71,11 @@ pub fn delete_all_chats_by_workspace(
 
 #[derive(serde::Serialize)]
 pub struct SendMessageResult {
+    pub turn_id: String,
     pub assistant_message_id: String,
+    pub user_message_id: String,
+    pub status: String,
+    pub queue_depth: usize,
 }
 
 #[tauri::command]
@@ -98,12 +102,22 @@ pub async fn send_message(
             llm_connection_id,
             app,
         )
-        .await;
-
-    let (assistant_message_id, _) = result.map_err(|e| AppError::Generic(e.to_string()))?;
+        .await
+        .map_err(|e| AppError::Generic(e.to_string()))?;
 
     Ok(SendMessageResult {
-        assistant_message_id,
+        turn_id: result.turn_id,
+        assistant_message_id: result.assistant_message_id,
+        user_message_id: result.user_message_id,
+        status: match result.status {
+            crate::features::conversation::types::TurnStartStatus::Started => {
+                "started".to_string()
+            }
+            crate::features::conversation::types::TurnStartStatus::Queued => {
+                "queued".to_string()
+            }
+        },
+        queue_depth: result.queue_depth,
     })
 }
 
@@ -120,7 +134,7 @@ pub async fn edit_and_resend_message(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<SendMessageResult, AppError> {
-    let (assistant_message_id, _) = state
+    let result = state
         .chat_service
         .edit_and_resend_message(
             chat_id,
@@ -137,7 +151,18 @@ pub async fn edit_and_resend_message(
         .map_err(|e| AppError::Generic(e.to_string()))?;
 
     Ok(SendMessageResult {
-        assistant_message_id,
+        turn_id: result.turn_id,
+        assistant_message_id: result.assistant_message_id,
+        user_message_id: result.user_message_id,
+        status: match result.status {
+            crate::features::conversation::types::TurnStartStatus::Started => {
+                "started".to_string()
+            }
+            crate::features::conversation::types::TurnStartStatus::Queued => {
+                "queued".to_string()
+            }
+        },
+        queue_depth: result.queue_depth,
     })
 }
 

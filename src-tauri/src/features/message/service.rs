@@ -81,4 +81,12 @@ impl MessageService {
     ) -> Result<(), AppError> {
         self.repository.delete_messages_after(&chat_id, &message_id)
     }
+
+    pub fn append_content(&self, id: &str, content_delta: &str) -> Result<(), AppError> {
+        self.repository.append_content(id, content_delta)
+    }
+
+    pub fn append_reasoning(&self, id: &str, reasoning_delta: &str) -> Result<(), AppError> {
+        self.repository.append_reasoning(id, reasoning_delta)
+    }
 }

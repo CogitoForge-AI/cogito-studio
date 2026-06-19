@@ -1,4 +1,5 @@
 pub mod chat;
+pub mod conversation;
 pub mod llm_connection;
 pub mod mcp_connection;
 pub mod message;

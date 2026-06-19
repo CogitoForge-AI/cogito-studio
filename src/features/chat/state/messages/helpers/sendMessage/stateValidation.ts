@@ -2,6 +2,7 @@ import type { RootState } from '@/app/store';
 import type { SendMessageContext } from '../types';
 import { llmConnectionsApi } from '@/features/llm';
 import { mcpConnectionsApi } from '@/features/mcp';
+import { messagesApi } from '@/features/chat/state/messagesApi';
 
 import type { LLMConnection } from '@/features/llm';
 import type { MCPServerConnection } from '@/features/mcp';
@@ -53,8 +54,8 @@ export function validateAndExtractState(
   const streamEnabled = workspaceSettings?.streamEnabled ?? true;
   const systemMessage = workspaceSettings?.systemMessage || '';
 
-  // Get existing messages
-  const existingMessages = state.messages.messagesByChatId[chatId] || [];
+  const existingMessages =
+    messagesApi.endpoints.getMessages.select(chatId)(state).data ?? [];
 
   // Get MCP connections from workspace settings
   const mcpToolIds = workspaceSettings?.mcpToolIds || {};

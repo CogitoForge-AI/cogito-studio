@@ -17,8 +17,8 @@ import askUserReducer from '@/features/chat/state/askUserSlice';
 import { notesReducer } from '@/features/notes/state/notesSlice';
 import { sentryMiddleware } from './sentryMiddleware';
 import { loggingMiddleware } from './loggingMiddleware';
-
 import { baseApi } from './api/baseApi';
+import conversationRuntimeReducer from '@/features/chat/state/conversationRuntimeSlice';
 
 export const store = configureStore({
   reducer: {
@@ -35,6 +35,7 @@ export const store = configureStore({
     toolPermission: toolPermissionReducer,
     askUser: askUserReducer,
     notes: notesReducer,
+    conversationRuntime: conversationRuntimeReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(

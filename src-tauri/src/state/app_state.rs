@@ -23,6 +23,9 @@ use crate::features::artifacts::{
     service::ArtifactService,
 };
 use crate::features::browser::BrowserService;
+use crate::features::conversation::{
+    manager::ConversationJobManager, stream_persist::StreamPersistDebouncer,
+};
 use crate::features::skill::SkillService;
 use crate::features::tool::{mcp::MCPToolRefreshService, core::ToolDeps};
 use crate::features::harness::HarnessFactory;
@@ -54,6 +57,8 @@ pub struct AppState {
 
     pub workspace_feature: Arc<WorkspaceFeature>,
     pub chat_service: Arc<ChatService>,
+    pub conversation_manager: Arc<ConversationJobManager>,
+    pub stream_persist: Arc<StreamPersistDebouncer>,
     pub message_service: Arc<MessageService>,
     pub chat_input_settings_service: Arc<ChatInputSettingsService>,
     pub llm_connection_service: Arc<LLMConnectionService>,
@@ -159,6 +164,9 @@ impl AppState {
             workspace_settings_service.clone(),
         ));
 
+        let conversation_manager = Arc::new(ConversationJobManager::new(harness_factory.clone()));
+        let stream_persist = StreamPersistDebouncer::new(message_service.clone());
+
         let chat_service = Arc::new(ChatService::new(
             chat_repo,
             message_service.clone(),
@@ -166,6 +174,7 @@ impl AppState {
             llm_connection_service.clone(),
             harness_factory,
             artifact_service.clone(),
+            conversation_manager.clone(),
         ));
 
         let chat_input_settings_service =
@@ -184,6 +193,8 @@ impl AppState {
             db_state,
             workspace_feature,
             chat_service,
+            conversation_manager,
+            stream_persist,
             message_service,
             chat_input_settings_service,
             llm_connection_service,

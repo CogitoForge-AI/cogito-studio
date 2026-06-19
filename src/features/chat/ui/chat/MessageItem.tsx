@@ -143,6 +143,7 @@ export const MessageItem = memo(
               <MarkdownContent
                 content={agentCardData.summary}
                 messageId={message.id}
+                isStreaming={isStreaming}
               />
             )}
           </AgentCard>
@@ -251,6 +252,7 @@ export const MessageItem = memo(
                         <MarkdownContent
                           content={cleanedContent}
                           messageId={message.id}
+                          isStreaming={isStreaming}
                         />
                       ) : (
                         cleanedContent

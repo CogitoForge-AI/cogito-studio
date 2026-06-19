@@ -61,7 +61,13 @@ export const messagesApi = baseApi.injectEndpoints({
       ],
     }),
     sendMessage: builder.mutation<
-      { assistant_message_id: string },
+      {
+        turn_id: string;
+        assistant_message_id: string;
+        user_message_id: string;
+        status: 'started' | 'queued';
+        queue_depth: number;
+      },
       {
         chatId: string;
         content: string;

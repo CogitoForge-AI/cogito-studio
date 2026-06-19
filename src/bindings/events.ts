@@ -5,6 +5,12 @@
  */
 
 export const TauriEvents = {
+  // Conversation turn lifecycle events
+  CONVERSATION_TURN_STARTED: 'conversation-turn-started',
+  CONVERSATION_TURN_QUEUED: 'conversation-turn-queued',
+  CONVERSATION_TURN_PHASE_CHANGED: 'conversation-turn-phase-changed',
+  LLM_CALL_COMPLETE: 'llm-call-complete',
+
   // Message streaming events
   MESSAGE_STARTED: 'message-started',
   MESSAGE_CHUNK: 'message-chunk',

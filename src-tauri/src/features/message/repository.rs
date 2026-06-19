@@ -18,6 +18,8 @@ pub trait MessageRepository: Send + Sync {
     fn delete(&self, id: &str) -> Result<(), AppError>;
     fn delete_messages_after(&self, chat_id: &str, message_id: &str) -> Result<(), AppError>;
     fn update_metadata(&self, id: &str, metadata: Option<&str>) -> Result<(), AppError>;
+    fn append_content(&self, id: &str, content_delta: &str) -> Result<(), AppError>;
+    fn append_reasoning(&self, id: &str, reasoning_delta: &str) -> Result<(), AppError>;
 }
 
 pub struct SqliteMessageRepository {
@@ -155,6 +157,24 @@ impl MessageRepository for SqliteMessageRepository {
         conn.execute(
             "UPDATE messages SET metadata = ?1 WHERE id = ?2",
             params![metadata, id],
+        )?;
+        Ok(())
+    }
+
+    fn append_content(&self, id: &str, content_delta: &str) -> Result<(), AppError> {
+        let conn = crate::db::get_connection(&self.app)?;
+        conn.execute(
+            "UPDATE messages SET content = content || ?1 WHERE id = ?2",
+            params![content_delta, id],
+        )?;
+        Ok(())
+    }
+
+    fn append_reasoning(&self, id: &str, reasoning_delta: &str) -> Result<(), AppError> {
+        let conn = crate::db::get_connection(&self.app)?;
+        conn.execute(
+            "UPDATE messages SET reasoning = COALESCE(reasoning, '') || ?1 WHERE id = ?2",
+            params![reasoning_delta, id],
         )?;
         Ok(())
     }

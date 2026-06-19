@@ -1,13 +1,16 @@
 use crate::error::AppError;
 use crate::events::{AgentEmitter, MessageEmitter, ToolEmitter};
+use crate::features::conversation::emitter::ConversationEmitter;
+use crate::features::conversation::types::{ConversationPhase, ConversationPhaseKind};
 use crate::features::harness::adapters::permission::filter_tool_permissions;
 use crate::features::harness::traits::HarnessHooks;
 use crate::features::usage::UsageService;
 use crate::features::workspace::settings::WorkspaceSettings;
 use crate::models::llm_types::ToolCall;
+use crate::state::AppState;
 use async_trait::async_trait;
 use std::sync::Arc;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 pub struct TauriHarnessHooks {
     usage_service: Arc<UsageService>,
@@ -16,6 +19,43 @@ pub struct TauriHarnessHooks {
 impl TauriHarnessHooks {
     pub fn new(usage_service: Arc<UsageService>) -> Self {
         Self { usage_service }
+    }
+
+    async fn emit_phase(
+        app: &AppHandle,
+        chat_id: &str,
+        kind: ConversationPhaseKind,
+        active_message_id: &str,
+        tool_call_id: Option<String>,
+    ) -> Result<(), AppError> {
+        let Some(state) = app.try_state::<AppState>() else {
+            return Ok(());
+        };
+
+        let turn_id = state
+            .conversation_manager
+            .active_turn_id_sync(chat_id)
+            .unwrap_or_else(|| "unknown".to_string());
+
+        let phase = ConversationPhase {
+            kind,
+            turn_id: Some(turn_id.clone()),
+            active_message_id: Some(active_message_id.to_string()),
+            iteration: None,
+            tool_call_id,
+            error: None,
+        };
+
+        state
+            .conversation_manager
+            .set_phase(chat_id, phase.clone())
+            .await;
+
+        ConversationEmitter::new(app.clone()).emit_turn_phase_changed(
+            chat_id.to_string(),
+            turn_id,
+            phase,
+        )
     }
 }
 
@@ -46,9 +86,19 @@ impl HarnessHooks for TauriHarnessHooks {
     ) -> Result<(), AppError> {
         MessageEmitter::new(app.clone()).emit_message_started(
             chat_id.to_string(),
+            None,
             user_message_id.to_string(),
             assistant_message_id.to_string(),
+        )?;
+
+        Self::emit_phase(
+            app,
+            chat_id,
+            ConversationPhaseKind::RunningLlm,
+            assistant_message_id,
+            None,
         )
+        .await
     }
 
     async fn on_tool_calls_detected(
@@ -104,7 +154,16 @@ impl HarnessHooks for TauriHarnessHooks {
             chat_id.to_string(),
             assistant_message_id.to_string(),
             count,
+        )?;
+
+        Self::emit_phase(
+            app,
+            chat_id,
+            ConversationPhaseKind::RunningTools,
+            assistant_message_id,
+            None,
         )
+        .await
     }
 
     async fn on_tool_execution_progress(
@@ -118,6 +177,17 @@ impl HarnessHooks for TauriHarnessHooks {
         error: Option<String>,
         app: &AppHandle,
     ) -> Result<(), AppError> {
+        if status == "waiting_for_user" {
+            Self::emit_phase(
+                app,
+                chat_id,
+                ConversationPhaseKind::WaitingUser,
+                assistant_message_id,
+                Some(tool_call_id.to_string()),
+            )
+            .await?;
+        }
+
         ToolEmitter::new(app.clone()).emit_tool_execution_progress(
             chat_id.to_string(),
             assistant_message_id.to_string(),

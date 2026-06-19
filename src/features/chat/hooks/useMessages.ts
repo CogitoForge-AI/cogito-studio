@@ -1,36 +1,23 @@
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { stopStreaming } from '../state/messages';
-import { useGetMessagesQuery } from '../state/messagesApi';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
+import { useConversationView } from './useConversationView';
+import { useGetMessagesQuery } from '../state/messagesApi';
 import { logger } from '@/lib/logger';
 
 /**
- * Hook to access and manage messages
+ * Hook to access and manage messages for the selected chat.
  */
 export function useMessages(selectedChatId: string | null) {
-  const dispatch = useAppDispatch();
-
   const { data: messages = [] } = useGetMessagesQuery(selectedChatId || '', {
     skip: !selectedChatId,
   });
 
-  const streamingMessageId = useAppSelector(
-    (state) => state.messages.streamingMessageId
-  );
-  const streamingByChatId = useAppSelector(
-    (state) => state.messages.streamingByChatId
-  );
-  const pausedStreaming = useAppSelector(
-    (state) => state.messages.pausedStreaming
-  );
-
-  const isStreaming = selectedChatId
-    ? !!streamingByChatId[selectedChatId]
-    : false;
+  const { streamingMessageId, isStreaming, runtime, phase, queueDepth } =
+    useConversationView(selectedChatId);
 
   const isAgentStreaming =
+    isStreaming &&
     messages.some((m) => {
-      if (m.id !== streamingByChatId[selectedChatId || '']) return false;
+      if (m.id !== streamingMessageId) return false;
       if (!m.metadata) return false;
       try {
         const parsed = JSON.parse(m.metadata);
@@ -38,29 +25,26 @@ export function useMessages(selectedChatId: string | null) {
       } catch {
         return false;
       }
-    }) && isStreaming;
+    });
 
   const handleStopStreaming = () => {
-    if (selectedChatId) {
-      dispatch(stopStreaming(selectedChatId));
+    if (!selectedChatId) return;
 
-      invokeCommand(TauriCommands.CANCEL_MESSAGE, {
-        chatId: selectedChatId,
-      }).catch((error) => {
-        logger.error('[useMessages] CANCEL_MESSAGE failed:', error);
-      });
-    } else {
-      dispatch(stopStreaming());
-    }
+    invokeCommand(TauriCommands.CANCEL_MESSAGE, {
+      chatId: selectedChatId,
+    }).catch((error) => {
+      logger.error('[useMessages] CANCEL_MESSAGE failed:', error);
+    });
   };
 
   return {
     messages,
     streamingMessageId,
-    streamingByChatId,
-    pausedStreaming,
     isStreaming,
     isAgentStreaming,
+    runtime,
+    phase,
+    queueDepth,
     handleStopStreaming,
   };
 }

@@ -4,7 +4,8 @@ use crate::events::{
     MessageCancelledEvent, MessageChunkEvent, MessageCompleteEvent, MessageErrorEvent,
     MessageMetadataUpdatedEvent, MessageStartedEvent, ThinkingChunkEvent,
 };
-use tauri::{AppHandle, Emitter};
+use crate::state::AppState;
+use tauri::{AppHandle, Emitter, Manager};
 
 pub struct MessageEmitter {
     app: AppHandle,
@@ -15,17 +16,42 @@ impl MessageEmitter {
         Self { app }
     }
 
+    fn resolve_turn_id(&self, chat_id: &str) -> Option<String> {
+        self.app
+            .try_state::<AppState>()
+            .and_then(|state| state.conversation_manager.active_turn_id_sync(chat_id))
+    }
+
+    fn persist_content_chunk(&self, message_id: &str, chunk: &str) {
+        if let Some(state) = self.app.try_state::<AppState>() {
+            state
+                .stream_persist
+                .schedule_content_append(message_id.to_string(), chunk.to_string());
+        }
+    }
+
+    fn persist_reasoning_chunk(&self, message_id: &str, chunk: &str) {
+        if let Some(state) = self.app.try_state::<AppState>() {
+            state
+                .stream_persist
+                .schedule_reasoning_append(message_id.to_string(), chunk.to_string());
+        }
+    }
+
     pub fn emit_message_started(
         &self,
         chat_id: String,
+        turn_id: Option<String>,
         user_message_id: String,
         assistant_message_id: String,
     ) -> Result<(), AppError> {
+        let turn_id = turn_id.or_else(|| self.resolve_turn_id(&chat_id));
         self.app
             .emit(
                 TauriEvents::MESSAGE_STARTED,
                 MessageStartedEvent {
                     chat_id,
+                    turn_id,
                     user_message_id,
                     assistant_message_id,
                 },
@@ -39,11 +65,14 @@ impl MessageEmitter {
         message_id: String,
         chunk: String,
     ) -> Result<(), AppError> {
+        self.persist_content_chunk(&message_id, &chunk);
+        let turn_id = self.resolve_turn_id(&chat_id);
         self.app
             .emit(
                 TauriEvents::MESSAGE_CHUNK,
                 MessageChunkEvent {
                     chat_id,
+                    turn_id,
                     message_id,
                     chunk,
                 },
@@ -57,11 +86,14 @@ impl MessageEmitter {
         message_id: String,
         chunk: String,
     ) -> Result<(), AppError> {
+        self.persist_reasoning_chunk(&message_id, &chunk);
+        let turn_id = self.resolve_turn_id(&chat_id);
         self.app
             .emit(
                 TauriEvents::THINKING_CHUNK,
                 ThinkingChunkEvent {
                     chat_id,
+                    turn_id,
                     message_id,
                     chunk,
                 },
@@ -76,11 +108,32 @@ impl MessageEmitter {
         content: String,
         token_usage: Option<crate::events::TokenUsage>,
     ) -> Result<(), AppError> {
+        if let Some(state) = self.app.try_state::<AppState>() {
+            state.stream_persist.flush_message(&message_id);
+        }
+
+        let turn_id = self.resolve_turn_id(&chat_id);
+
+        if let (Some(turn_id), Some(state)) = (turn_id.clone(), self.app.try_state::<AppState>()) {
+            let _ = crate::features::conversation::emitter::ConversationEmitter::new(
+                self.app.clone(),
+            )
+            .emit_llm_call_complete(
+                chat_id.clone(),
+                turn_id,
+                message_id.clone(),
+                content.clone(),
+                token_usage.clone(),
+            );
+            return Ok(());
+        }
+
         self.app
             .emit(
                 TauriEvents::MESSAGE_COMPLETE,
                 MessageCompleteEvent {
                     chat_id,
+                    turn_id,
                     message_id,
                     content,
                     token_usage,

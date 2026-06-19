@@ -10,5 +10,11 @@ mod tests {
         // Just verify constants are accessible
         assert_eq!(TauriCommands::GET_PYTHON_RUNTIMES_STATUS, "get_python_runtimes_status");
         assert_eq!(TauriEvents::MESSAGE_CHUNK, "message-chunk");
+        assert_eq!(TauriEvents::LLM_CALL_COMPLETE, "llm-call-complete");
+        assert_eq!(
+            TauriEvents::CONVERSATION_TURN_STARTED,
+            "conversation-turn-started"
+        );
+        assert_eq!(TauriCommands::GET_CONVERSATION_STATE, "get_conversation_state");
     }
 }

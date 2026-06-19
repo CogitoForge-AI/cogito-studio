@@ -14,6 +14,8 @@ pub use tool_emitter::ToolEmitter;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MessageStartedEvent {
     pub chat_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub turn_id: Option<String>,
     pub user_message_id: String,
     pub assistant_message_id: String,
 }
@@ -21,6 +23,8 @@ pub struct MessageStartedEvent {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MessageChunkEvent {
     pub chat_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub turn_id: Option<String>,
     pub message_id: String,
     pub chunk: String,
 }
@@ -28,6 +32,8 @@ pub struct MessageChunkEvent {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ThinkingChunkEvent {
     pub chat_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub turn_id: Option<String>,
     pub message_id: String,
     pub chunk: String,
 }
@@ -35,9 +41,43 @@ pub struct ThinkingChunkEvent {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MessageCompleteEvent {
     pub chat_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub turn_id: Option<String>,
     pub message_id: String,
     pub content: String,
     pub token_usage: Option<TokenUsage>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LlmCallCompleteEvent {
+    pub chat_id: String,
+    pub turn_id: String,
+    pub message_id: String,
+    pub content: String,
+    pub token_usage: Option<TokenUsage>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ConversationTurnStartedEvent {
+    pub chat_id: String,
+    pub turn_id: String,
+    pub user_message_id: String,
+    pub assistant_message_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ConversationTurnQueuedEvent {
+    pub chat_id: String,
+    pub turn_id: String,
+    pub assistant_message_id: String,
+    pub queue_depth: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ConversationTurnPhaseChangedEvent {
+    pub chat_id: String,
+    pub turn_id: String,
+    pub phase: crate::features::conversation::types::ConversationPhase,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

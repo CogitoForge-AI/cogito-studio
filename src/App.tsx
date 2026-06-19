@@ -9,7 +9,7 @@ import { ModalStackProvider } from '@/ui/atoms/modal-stack';
 import { useNotificationListener } from '@/hooks/useNotificationListener';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useMenuEvents } from '@/hooks/useMenuEvents';
-import { useChatStreaming } from '@/features/chat/hooks/useChatStreaming';
+import { useConversationEventProjector } from '@/features/chat/hooks/useConversationEventProjector';
 import { useArtifactCreatedListener } from '@/features/artifacts/hooks/useArtifactCreatedListener';
 import { loadAppSettings } from '@/features/ui/state/uiSlice';
 import i18n from '@/i18n/config';
@@ -32,7 +32,7 @@ function AppContent() {
   useKeyboardShortcuts();
 
   // Listen for chat streaming events from Rust core
-  useChatStreaming();
+  useConversationEventProjector();
 
   // Refresh artifacts panel when assistant creates a new artifact
   useArtifactCreatedListener();

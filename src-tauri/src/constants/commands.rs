@@ -25,6 +25,8 @@ impl TauriCommands {
     pub const RESPOND_USER_QUESTION: &'static str = "respond_user_question";
     pub const GENERATE_CHAT_TITLE: &'static str = "generate_chat_title";
     pub const GET_OR_CREATE_SPECIALIST_SESSION: &'static str = "get_or_create_specialist_session";
+    pub const GET_CONVERSATION_STATE: &'static str = "get_conversation_state";
+    pub const GET_ACTIVE_CONVERSATIONS: &'static str = "get_active_conversations";
 
     // Message commands
     pub const CREATE_MESSAGE: &'static str = "create_message";

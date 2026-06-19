@@ -23,6 +23,7 @@ export function MarkdownContent({
   content,
   className,
   messageId,
+  isStreaming = false,
 }: MarkdownContentProps) {
   // Track render performance for markdown rendering
   useComponentPerformance({
@@ -33,10 +34,6 @@ export function MarkdownContent({
   const { t } = useTranslation('common');
   const sanitizedContent =
     typeof content === 'string' ? content : String(content || '');
-  const streamingMessageId = useAppSelector(
-    (state) => state.messages.streamingMessageId
-  );
-  const isStreaming = messageId ? streamingMessageId === messageId : false;
 
   // Get current app theme for code block syntax highlighting
   const currentTheme = useAppSelector((state) => state.ui.theme);
@@ -190,7 +187,8 @@ export function MarkdownContent({
 interface MarkdownContentProps {
   content: string;
   className?: string;
-  messageId?: string; // Message ID to check if it's currently streaming
+  messageId?: string;
+  isStreaming?: boolean;
 }
 
 interface ErrorBoundaryState {

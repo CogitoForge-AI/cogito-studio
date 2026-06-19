@@ -26,6 +26,8 @@ export const TauriCommands = {
   RESPOND_USER_QUESTION: 'respond_user_question',
   GENERATE_CHAT_TITLE: 'generate_chat_title',
   GET_OR_CREATE_SPECIALIST_SESSION: 'get_or_create_specialist_session',
+  GET_CONVERSATION_STATE: 'get_conversation_state',
+  GET_ACTIVE_CONVERSATIONS: 'get_active_conversations',
 
   // Chat Input Settings commands
   GET_CHAT_INPUT_SETTINGS: 'get_chat_input_settings',

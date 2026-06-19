@@ -12,6 +12,12 @@ impl TauriEvents {
     pub const MESSAGE_CHUNK: &'static str = "message-chunk";
     pub const THINKING_CHUNK: &'static str = "thinking-chunk";
     pub const MESSAGE_COMPLETE: &'static str = "message-complete";
+    pub const LLM_CALL_COMPLETE: &'static str = "llm-call-complete";
+
+    // Conversation turn lifecycle events
+    pub const CONVERSATION_TURN_STARTED: &'static str = "conversation-turn-started";
+    pub const CONVERSATION_TURN_QUEUED: &'static str = "conversation-turn-queued";
+    pub const CONVERSATION_TURN_PHASE_CHANGED: &'static str = "conversation-turn-phase-changed";
     pub const MESSAGE_ERROR: &'static str = "message-error";
     pub const MESSAGE_CANCELLED: &'static str = "message-cancelled";
     pub const MESSAGE_METADATA_UPDATED: &'static str = "message-metadata-updated";

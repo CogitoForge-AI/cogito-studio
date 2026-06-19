@@ -2,14 +2,22 @@ use super::models::Chat;
 use super::repository::ChatRepository;
 use crate::error::AppError;
 use crate::features::artifacts::ArtifactService;
+use crate::features::conversation::manager::ConversationJobManager;
+use crate::features::conversation::types::{StartTurnResult, TurnWorkItem};
 use crate::features::harness::{HarnessFactory, MessageTurnRequest};
 use crate::features::llm_connection::LLMConnectionService;
 use crate::features::message::{MessageEmitter, MessageService};
 use crate::features::workspace::settings::WorkspaceSettingsService;
-use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::AppHandle;
-use tokio::sync::Mutex;
+use tokio::sync::oneshot;
+
+struct PreparedTurn {
+    turn_id: String,
+    user_message_id: String,
+    assistant_message_id: String,
+    turn_request: MessageTurnRequest,
+}
 
 pub struct ChatService {
     pub(crate) repository: Arc<dyn ChatRepository>,
@@ -18,7 +26,7 @@ pub struct ChatService {
     llm_connection_service: Arc<LLMConnectionService>,
     harness_factory: Arc<HarnessFactory>,
     artifact_service: Arc<ArtifactService>,
-    cancellation_senders: Arc<Mutex<HashMap<String, tokio::sync::broadcast::Sender<()>>>>,
+    conversation_manager: Arc<ConversationJobManager>,
 }
 
 impl ChatService {
@@ -29,6 +37,7 @@ impl ChatService {
         llm_connection_service: Arc<LLMConnectionService>,
         harness_factory: Arc<HarnessFactory>,
         artifact_service: Arc<ArtifactService>,
+        conversation_manager: Arc<ConversationJobManager>,
     ) -> Self {
         Self {
             repository,
@@ -37,27 +46,12 @@ impl ChatService {
             llm_connection_service,
             harness_factory,
             artifact_service,
-            cancellation_senders: Arc::new(Mutex::new(HashMap::new())),
+            conversation_manager,
         }
     }
 
     pub fn cancel_message(&self, chat_id: &str) -> Result<(), AppError> {
-        let senders = futures::executor::block_on(self.cancellation_senders.lock());
-        if let Some(sender) = senders.get(chat_id) {
-            let _ = sender.send(());
-        }
-        Ok(())
-    }
-
-    async fn get_cancellation_receiver(
-        &self,
-        chat_id: &str,
-    ) -> tokio::sync::broadcast::Receiver<()> {
-        let mut senders = self.cancellation_senders.lock().await;
-        let sender = senders
-            .entry(chat_id.to_string())
-            .or_insert_with(|| tokio::sync::broadcast::channel(1).0);
-        sender.subscribe()
+        futures::executor::block_on(self.conversation_manager.cancel_turn(chat_id))
     }
 
     pub fn create(
@@ -150,7 +144,7 @@ impl ChatService {
         app: AppHandle,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, AppError>> + Send>> {
         Box::pin(async move {
-            self.send_message(chat_id, prompt, None, None, None, None, None, app)
+            self.send_message_and_wait(chat_id, prompt, None, None, None, None, None, app)
                 .await
                 .map(|(_, content)| content)
         })
@@ -166,14 +160,92 @@ impl ChatService {
         reasoning_effort: Option<String>,
         llm_connection_id_override: Option<String>,
         app: AppHandle,
+    ) -> Result<StartTurnResult, AppError> {
+        let prepared = self
+            .prepare_turn(
+                chat_id,
+                content,
+                files,
+                metadata,
+                selected_model,
+                reasoning_effort,
+                llm_connection_id_override,
+                &app,
+            )
+            .await?;
+
+        let work = TurnWorkItem {
+            turn_id: prepared.turn_id.clone(),
+            user_message_id: prepared.user_message_id.clone(),
+            assistant_message_id: prepared.assistant_message_id.clone(),
+            request: prepared.turn_request,
+            completion: None,
+        };
+
+        self.conversation_manager
+            .enqueue_turn(app, work)
+            .await
+    }
+
+    async fn send_message_and_wait(
+        &self,
+        chat_id: String,
+        content: String,
+        files: Option<Vec<String>>,
+        metadata: Option<String>,
+        selected_model: Option<String>,
+        reasoning_effort: Option<String>,
+        llm_connection_id_override: Option<String>,
+        app: AppHandle,
     ) -> Result<(String, String), AppError> {
+        let prepared = self
+            .prepare_turn(
+                chat_id.clone(),
+                content,
+                files,
+                metadata,
+                selected_model,
+                reasoning_effort,
+                llm_connection_id_override,
+                &app,
+            )
+            .await?;
+
+        let (tx, rx) = oneshot::channel();
+        let work = TurnWorkItem {
+            turn_id: prepared.turn_id.clone(),
+            user_message_id: prepared.user_message_id.clone(),
+            assistant_message_id: prepared.assistant_message_id.clone(),
+            request: prepared.turn_request,
+            completion: Some(tx),
+        };
+
+        self.conversation_manager
+            .enqueue_turn(app, work)
+            .await?;
+
+        rx.await
+            .map_err(|_| AppError::Generic("Turn completion channel closed".to_string()))?
+    }
+
+    async fn prepare_turn(
+        &self,
+        chat_id: String,
+        content: String,
+        files: Option<Vec<String>>,
+        metadata: Option<String>,
+        selected_model: Option<String>,
+        reasoning_effort: Option<String>,
+        llm_connection_id_override: Option<String>,
+        app: &AppHandle,
+    ) -> Result<PreparedTurn, AppError> {
         crate::lib::sentry_helpers::add_breadcrumb(
             "chat",
             format!("Sending message to chat {chat_id}"),
             sentry::Level::Info,
         );
 
-        let processed_files = self.harness_factory.process_incoming_files(&app, files)?;
+        let processed_files = self.harness_factory.process_incoming_files(app, files)?;
         let final_metadata = self
             .harness_factory
             .merge_file_metadata(metadata.as_deref(), processed_files.as_deref());
@@ -217,6 +289,7 @@ impl ChatService {
             .unwrap()
             .as_millis() as i64;
         let user_message_id = uuid::Uuid::new_v4().to_string();
+        let turn_id = uuid::Uuid::new_v4().to_string();
 
         self.message_service.create(
             user_message_id.clone(),
@@ -253,16 +326,15 @@ impl ChatService {
 
         MessageEmitter::new(app.clone()).emit_message_started(
             chat_id.clone(),
+            None,
             user_message_id.clone(),
             assistant_message_id.clone(),
         )?;
 
-        let cancellation_rx = self.get_cancellation_receiver(&chat_id).await;
-
         let turn_request = MessageTurnRequest {
             chat_id: chat_id.clone(),
             workspace_id: workspace_id.clone(),
-            user_message_id,
+            user_message_id: user_message_id.clone(),
             user_content: content.clone(),
             user_metadata: metadata,
             user_files: processed_files,
@@ -275,23 +347,12 @@ impl ChatService {
             agent_id: chat.agent_id.clone(),
         };
 
-        let output = match self
-            .harness_factory
-            .process_message_turn(turn_request, app.clone(), cancellation_rx)
-            .await
-        {
-            Ok(output) => output,
-            Err(AppError::Cancelled) => {
-                MessageEmitter::new(app.clone()).emit_message_cancelled(
-                    chat_id.clone(),
-                    assistant_message_id.clone(),
-                )?;
-                return Err(AppError::Cancelled);
-            }
-            Err(e) => return Err(e),
-        };
-
-        Ok((output.assistant_message_id, output.content))
+        Ok(PreparedTurn {
+            turn_id,
+            user_message_id,
+            assistant_message_id,
+            turn_request,
+        })
     }
 
     pub async fn edit_and_resend_message(
@@ -305,7 +366,7 @@ impl ChatService {
         reasoning_effort: Option<String>,
         llm_connection_id: Option<String>,
         app: AppHandle,
-    ) -> Result<(String, String), AppError> {
+    ) -> Result<StartTurnResult, AppError> {
         let processed_new_files = self.harness_factory.process_incoming_files(&app, new_files)?;
 
         if self.message_service.get_by_id(&message_id)?.is_none() {
@@ -324,6 +385,8 @@ impl ChatService {
                 )
                 .await;
         }
+
+        self.conversation_manager.cancel_turn(&chat_id).await?;
 
         self.message_service
             .delete_messages_after(chat_id.clone(), message_id.clone())?;

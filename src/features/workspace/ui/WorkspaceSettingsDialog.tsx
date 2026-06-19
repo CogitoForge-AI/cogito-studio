@@ -35,11 +35,8 @@ import {
 } from 'lucide-react';
 import { useWorkspaces } from '../hooks/useWorkspaces';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import {
-  stopStreaming,
-  clearStreamingByChatId,
-  clearMessages,
-} from '@/features/chat/state/messages';
+import { messagesApi } from '@/features/chat/state/messagesApi';
+import { invokeCommand, TauriCommands } from '@/lib/tauri';
 import {
   clearAllChats,
   createChat,
@@ -119,9 +116,12 @@ export function WorkspaceSettingsDialog({
       setIsClearing(true);
       const chatIds = chats.map((chat) => chat.id);
       chatIds.forEach((chatId) => {
-        dispatch(stopStreaming(chatId));
-        dispatch(clearStreamingByChatId(chatId));
-        dispatch(clearMessages(chatId));
+        invokeCommand(TauriCommands.CANCEL_MESSAGE, { chatId }).catch(() => {});
+        dispatch(
+          messagesApi.util.invalidateTags([
+            { type: 'Message', id: `LIST_${chatId}` },
+          ])
+        );
       });
       await dispatch(clearAllChats(selectedWorkspace.id)).unwrap();
       const newChat = await dispatch(

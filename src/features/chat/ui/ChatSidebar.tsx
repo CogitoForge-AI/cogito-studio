@@ -40,6 +40,7 @@ import { useExportChat } from '@/features/chat/hooks/useExportChat';
 import { useAppDispatch } from '@/app/hooks';
 import { setWorkspaceSettingsOpen } from '@/features/ui/state/uiSlice';
 import { logger } from '@/lib/logger';
+import { isActiveConversationPhase } from '../state/conversationRuntimeSlice';
 import { ConfirmDialog } from '@/ui/molecules/ConfirmDialog';
 
 export function ChatSidebar() {
@@ -56,8 +57,7 @@ export function ChatSidebar() {
   const {
     chats,
     selectedChatId,
-    streamingByChatId,
-    pausedStreaming,
+    conversationRuntime,
     handleNewChat,
     handleChatSelect,
     handleDeleteChat,
@@ -223,19 +223,26 @@ export function ChatSidebar() {
                       </div>
                     </div>
 
-                    {streamingByChatId[chat.id] && (
-                      <div className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden rounded-b-md">
-                        <div className="h-full w-full bg-primary/10">
-                          <div
-                            className={cn(
-                              'h-full bg-primary animate-indeterminate-bar',
-                              pausedStreaming[chat.id] &&
-                                'animate-none opacity-40'
-                            )}
-                          />
+                    {(() => {
+                      const runtime = conversationRuntime[chat.id];
+                      const isActive =
+                        runtime &&
+                        isActiveConversationPhase(runtime.phase.kind);
+                      if (!isActive) return null;
+                      const queueDepth = runtime.queue_depth;
+                      return (
+                        <div className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden rounded-b-md">
+                          <div className="h-full w-full bg-primary/10">
+                            <div className="h-full bg-primary animate-indeterminate-bar" />
+                          </div>
+                          {queueDepth > 0 && (
+                            <span className="absolute -top-3 right-1 rounded bg-primary px-1 text-[10px] text-primary-foreground">
+                              +{queueDepth}
+                            </span>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Export Button - Visible on hover */}
                     <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
