@@ -219,7 +219,7 @@ export function ChatInput({
   }, [selectedModel, selectedLLMConnectionId, llmConnections]);
 
   const modelCapabilities = useMemo(
-    () => resolveModelCapabilities(currentModel, currentModelName),
+    () => resolveModelCapabilities(currentModel ?? undefined, currentModelName),
     [currentModel, currentModelName]
   );
 

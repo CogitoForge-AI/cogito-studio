@@ -77,7 +77,7 @@ export function UsageLogs({
   const sortedLogs = useMemo(() => {
     if (tokenSort === null) return logs;
 
-    return logs.toSorted((a, b) => {
+    return [...logs].sort((a, b) => {
       const diff = a.total_tokens - b.total_tokens;
       return tokenSort === 'asc' ? diff : -diff;
     });

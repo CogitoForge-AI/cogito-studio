@@ -538,10 +538,18 @@ export function isFileAllowedForInput(
   input: ModelInputCapabilities
 ): boolean {
   const type = file.type;
-  const isImage = type.startsWith('image/') || IMAGE_FILE_TYPES.includes(type);
-  const isDocument = DOCUMENT_FILE_TYPES.includes(type);
-  const isAudio = AUDIO_FILE_TYPES.includes(type);
-  const isVideo = VIDEO_FILE_TYPES.includes(type);
+  const isImage =
+    type.startsWith('image/') ||
+    IMAGE_FILE_TYPES.includes(type as (typeof IMAGE_FILE_TYPES)[number]);
+  const isDocument = DOCUMENT_FILE_TYPES.includes(
+    type as (typeof DOCUMENT_FILE_TYPES)[number]
+  );
+  const isAudio = AUDIO_FILE_TYPES.includes(
+    type as (typeof AUDIO_FILE_TYPES)[number]
+  );
+  const isVideo = VIDEO_FILE_TYPES.includes(
+    type as (typeof VIDEO_FILE_TYPES)[number]
+  );
 
   if (isImage) return input.image;
   if (isDocument) return input.document;

@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
-import type { RootState } from '@/app/store';
+import type { AppDispatch, RootState } from '@/app/store';
 import { resolveModelCapabilities } from '@/features/llm/lib/model-utils';
 import { validateAndExtractState } from '../helpers/sendMessage/stateValidation';
 import { messagesApi } from '../../messagesApi';
@@ -63,7 +63,7 @@ export function createSendMessageThunkNew() {
         }
       );
 
-      dispatch(
+      (dispatch as AppDispatch)(
         messagesApi.util.updateQueryData('getMessages', chatId, (draft) => {
           const userMessage = draft.find(
             (m) => m.id === result.user_message_id
