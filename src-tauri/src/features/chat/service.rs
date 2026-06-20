@@ -10,7 +10,6 @@ use crate::features::message::{MessageEmitter, MessageService};
 use crate::features::workspace::settings::WorkspaceSettingsService;
 use std::sync::Arc;
 use tauri::AppHandle;
-use tokio::sync::oneshot;
 
 struct PreparedTurn {
     turn_id: String,
@@ -137,19 +136,6 @@ impl ChatService {
         self.repository.delete_by_workspace_id(&workspace_id)
     }
 
-    pub fn process_agent_request(
-        self: Arc<Self>,
-        chat_id: String,
-        prompt: String,
-        app: AppHandle,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, AppError>> + Send>> {
-        Box::pin(async move {
-            self.send_message_and_wait(chat_id, prompt, None, None, None, None, None, app)
-                .await
-                .map(|(_, content)| content)
-        })
-    }
-
     pub async fn send_message(
         &self,
         chat_id: String,
@@ -183,45 +169,6 @@ impl ChatService {
         };
 
         self.conversation_manager.enqueue_turn(app, work).await
-    }
-
-    async fn send_message_and_wait(
-        &self,
-        chat_id: String,
-        content: String,
-        files: Option<Vec<String>>,
-        metadata: Option<String>,
-        selected_model: Option<String>,
-        reasoning_effort: Option<String>,
-        llm_connection_id_override: Option<String>,
-        app: AppHandle,
-    ) -> Result<(String, String), AppError> {
-        let prepared = self
-            .prepare_turn(
-                chat_id.clone(),
-                content,
-                files,
-                metadata,
-                selected_model,
-                reasoning_effort,
-                llm_connection_id_override,
-                &app,
-            )
-            .await?;
-
-        let (tx, rx) = oneshot::channel();
-        let work = TurnWorkItem {
-            turn_id: prepared.turn_id.clone(),
-            user_message_id: prepared.user_message_id.clone(),
-            assistant_message_id: prepared.assistant_message_id.clone(),
-            request: prepared.turn_request,
-            completion: Some(tx),
-        };
-
-        self.conversation_manager.enqueue_turn(app, work).await?;
-
-        rx.await
-            .map_err(|_| AppError::Generic("Turn completion channel closed".to_string()))?
     }
 
     async fn prepare_turn(

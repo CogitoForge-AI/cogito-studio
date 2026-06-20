@@ -1,6 +1,5 @@
 use super::service::SkillService;
 use crate::constants::events::TauriEvents;
-use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -140,5 +139,3 @@ impl SkillSyncCoordinator {
         }
     }
 }
-
-pub type SkillSnapshot = HashSet<String>;

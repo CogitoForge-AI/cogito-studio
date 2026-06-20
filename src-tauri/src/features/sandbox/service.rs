@@ -3,9 +3,7 @@ use super::models::{
 };
 use crate::error::AppError;
 use crate::features::runtime::node::service::NodeRuntime;
-use crate::features::runtime::python::service::{
-    get_bundled_uv_path, ExecutionResult, PythonRuntime,
-};
+use crate::features::runtime::python::service::{ExecutionResult, PythonRuntime};
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 use tauri::AppHandle;
@@ -205,10 +203,5 @@ impl SandboxService {
             bin_dir,
             executables,
         })
-    }
-
-    /// Bundled UV path for consumers that need it before sandbox python is installed.
-    pub fn bundled_uv_path(app: &AppHandle) -> Result<PathBuf, AppError> {
-        get_bundled_uv_path(app)
     }
 }

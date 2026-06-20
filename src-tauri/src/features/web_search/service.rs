@@ -35,20 +35,6 @@ impl WebSearchService {
         })
     }
 
-    pub fn from_parts(
-        provider: WebSearchProvider,
-        tavily_api_key: Option<String>,
-        exa_api_key: Option<String>,
-    ) -> Self {
-        Self {
-            config: WebSearchConfig {
-                provider,
-                tavily_api_key: non_empty(tavily_api_key),
-                exa_api_key: non_empty(exa_api_key),
-            },
-        }
-    }
-
     pub fn is_tool_available(&self) -> bool {
         self.active_api_key().is_some()
     }
@@ -128,23 +114,37 @@ fn non_empty(value: Option<String>) -> Option<String> {
 mod tests {
     use super::*;
 
+    fn web_search_from_parts(
+        provider: WebSearchProvider,
+        tavily_api_key: Option<String>,
+        exa_api_key: Option<String>,
+    ) -> WebSearchService {
+        WebSearchService {
+            config: WebSearchConfig {
+                provider,
+                tavily_api_key: non_empty(tavily_api_key),
+                exa_api_key: non_empty(exa_api_key),
+            },
+        }
+    }
+
     #[test]
     fn is_tool_available_requires_active_provider_key() {
-        let svc = WebSearchService::from_parts(
+        let svc = web_search_from_parts(
             WebSearchProvider::Tavily,
             Some("tvly-key".to_string()),
             None,
         );
         assert!(svc.is_tool_available());
 
-        let svc = WebSearchService::from_parts(
+        let svc = web_search_from_parts(
             WebSearchProvider::Tavily,
             None,
             Some("exa-key".to_string()),
         );
         assert!(!svc.is_tool_available());
 
-        let svc = WebSearchService::from_parts(
+        let svc = web_search_from_parts(
             WebSearchProvider::Exa,
             Some("tvly-key".to_string()),
             Some("exa-key".to_string()),

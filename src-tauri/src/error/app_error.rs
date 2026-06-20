@@ -40,23 +40,11 @@ pub enum AppError {
     #[error("[Zip] {0}")]
     Zip(#[from] zip::result::ZipError),
 
-    #[error("[Prompt] {0}")]
-    Prompt(String),
-
-    #[error("[Hub] {0}")]
-    Hub(String),
-
-    #[error("[PromptTemplate] {0}")]
-    PromptTemplate(String),
-
     #[error("[Cancelled] Operation cancelled by user")]
     Cancelled,
 
     #[error("[Error] {0}")]
     Generic(String),
-
-    #[error("[Agent] {0}")]
-    Agent(String),
 }
 
 impl AppError {

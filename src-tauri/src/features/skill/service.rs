@@ -25,12 +25,6 @@ impl SkillService {
         self.get_skills_dir()
     }
 
-    /// Open skills folder in system file manager
-    pub fn open_skills_folder_path(&self) -> Result<String, AppError> {
-        let dir = self.get_skills_dir()?;
-        Ok(dir.to_string_lossy().to_string())
-    }
-
     pub fn snapshot_skill_ids(&self) -> Result<HashSet<String>, AppError> {
         let conn = crate::db::connection::get_connection(&self.app)?;
         let records = SkillRepository::get_all(&conn)?;
@@ -274,13 +268,6 @@ impl SkillService {
         let result = self.import_skill_from_path(&skill_dir);
         zip_cleanup();
         result
-    }
-
-    /// @deprecated Use `import_skill_from_path`; kept for internal compatibility
-    pub fn import_skill(&self, source_path: &Path) -> Result<Skill, AppError> {
-        let skill = self.import_skill_from_path(source_path)?;
-        self.sync_skills_to_db()?;
-        Ok(skill)
     }
 
     /// Delete skill
