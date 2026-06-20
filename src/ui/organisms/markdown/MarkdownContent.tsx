@@ -83,13 +83,16 @@ export function MarkdownContent({
 
   const [streamBuffer, setStreamBuffer] = useState(sanitizedContent);
   const lastUpdateLength = useRef(sanitizedContent.length);
+  const lastFlushTime = useRef(0);
   const bufferTimeout = useRef<NodeJS.Timeout>();
+  const STREAM_FLUSH_MS = 500;
 
   useEffect(() => {
     if (isStreaming) {
       // Initialize buffer when streaming starts
       setStreamBuffer(sanitizedContent);
       lastUpdateLength.current = sanitizedContent.length;
+      lastFlushTime.current = performance.now();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStreaming]);
@@ -99,42 +102,42 @@ export function MarkdownContent({
 
     const newContentLength = sanitizedContent.length;
     const diff = newContentLength - lastUpdateLength.current;
-
-    // Check newline count in the new chunk
-    // Optimization: no need to slice if diff is zero
     if (diff === 0) return;
 
-    const newChunk = sanitizedContent.slice(lastUpdateLength.current);
-    const newlineCount = (newChunk.match(/\n/g) || []).length;
-
-    // Bypass smoothing while streaming inside an open html fence
     const bypassForHtmlPreview = shouldBypassStreamBuffer(
       sanitizedContent,
       isStreaming
     );
 
-    // Update if > 5 newlines or > 500 chars, html fence is open, or debounce timeout
-    const shouldUpdate =
-      bypassForHtmlPreview || newlineCount >= 5 || diff > 500;
-
-    if (shouldUpdate) {
-      if (bufferTimeout.current) clearTimeout(bufferTimeout.current);
-
+    const flushBuffer = () => {
       setStreamBuffer(sanitizedContent);
       lastUpdateLength.current = newContentLength;
-    } else {
-      if (bufferTimeout.current) clearTimeout(bufferTimeout.current);
-
-      bufferTimeout.current = setTimeout(() => {
-        setStreamBuffer(sanitizedContent);
-        lastUpdateLength.current = newContentLength;
-      }, 800);
-    }
-
-    return () => {
-      if (bufferTimeout.current) clearTimeout(bufferTimeout.current);
+      lastFlushTime.current = performance.now();
     };
+
+    const now = performance.now();
+    const elapsed = now - lastFlushTime.current;
+    const shouldFlushNow =
+      bypassForHtmlPreview || diff > 2000 || elapsed >= STREAM_FLUSH_MS;
+
+    if (shouldFlushNow) {
+      if (bufferTimeout.current) clearTimeout(bufferTimeout.current);
+      flushBuffer();
+    } else if (!bufferTimeout.current) {
+      bufferTimeout.current = setTimeout(() => {
+        bufferTimeout.current = undefined;
+        flushBuffer();
+      }, STREAM_FLUSH_MS - elapsed);
+    }
   }, [sanitizedContent, isStreaming]);
+
+  useEffect(() => {
+    if (isStreaming) return;
+    if (bufferTimeout.current) {
+      clearTimeout(bufferTimeout.current);
+      bufferTimeout.current = undefined;
+    }
+  }, [isStreaming]);
 
   const displayedContent = isStreaming ? streamBuffer : sanitizedContent;
 
@@ -162,7 +165,13 @@ export function MarkdownContent({
         </div>
       )}
     >
-      <div className={cn('markdown-content', className)}>
+      <div
+        className={cn(
+          'markdown-content',
+          className,
+          isStreaming && 'cursor-default [&_*]:cursor-default'
+        )}
+      >
         <MarkdownMessageProvider messageId={messageId}>
           <Streamdown
             mode="streaming"
@@ -171,10 +180,6 @@ export function MarkdownContent({
             controls={{ table: false, mermaid: true }}
             components={components}
             shikiTheme={shikiTheme}
-            className={cn(
-              isStreaming &&
-                '[&>*]:animate-in [&>*]:fade-in [&>*]:slide-in-from-bottom-1 [&>*]:duration-1000'
-            )}
           >
             {displayedContent}
           </Streamdown>

@@ -181,7 +181,10 @@ export const MessageItem = memo(
               <div
                 ref={contentRef}
                 className={cn(
-                  'overflow-hidden transition-[max-height] duration-300 ease-in-out select-text',
+                  'overflow-hidden transition-[max-height] duration-300 ease-in-out',
+                  isStreaming
+                    ? 'cursor-default select-none [&_*]:cursor-default'
+                    : 'select-text',
                   canCollapse && isCollapsed
                     ? 'max-h-[300px]'
                     : 'max-h-[9999px]'

@@ -314,6 +314,68 @@ export function useConversationEventProjector() {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
+    const pendingContent = new Map<string, string>();
+    const flushTimers = new Map<string, ReturnType<typeof setTimeout>>();
+    const CONTENT_FLUSH_MS = 400;
+
+    const messageKey = (chatId: string, messageId: string) =>
+      `${chatId}:${messageId}`;
+
+    const getStoredContent = (chatId: string, messageId: string): string => {
+      const key = messageKey(chatId, messageId);
+      const pending = pendingContent.get(key);
+      if (pending !== undefined) return pending;
+
+      const cached = messagesApi.endpoints.getMessages.select(chatId)(
+        store.getState()
+      )?.data;
+      return cached?.find((m) => m.id === messageId)?.content ?? '';
+    };
+
+    const flushContent = (chatId: string, messageId: string) => {
+      const key = messageKey(chatId, messageId);
+      const content = pendingContent.get(key);
+      if (content === undefined) return;
+
+      dispatch(
+        messagesApi.util.updateQueryData(
+          'getMessages',
+          chatId,
+          (draft: Message[]) => {
+            const message = draft.find((m) => m.id === messageId);
+            if (message) message.content = content;
+          }
+        )
+      );
+    };
+
+    const scheduleContentFlush = (chatId: string, messageId: string) => {
+      const key = messageKey(chatId, messageId);
+      if (flushTimers.has(key)) return;
+
+      flushTimers.set(
+        key,
+        setTimeout(() => {
+          flushTimers.delete(key);
+          flushContent(chatId, messageId);
+        }, CONTENT_FLUSH_MS)
+      );
+    };
+
+    const flushContentImmediate = (chatId: string, messageId: string) => {
+      const key = messageKey(chatId, messageId);
+      const timer = flushTimers.get(key);
+      if (timer) {
+        clearTimeout(timer);
+        flushTimers.delete(key);
+      }
+      flushContent(chatId, messageId);
+    };
+
+    const clearPendingContent = (chatId: string, messageId: string) => {
+      pendingContent.delete(messageKey(chatId, messageId));
+    };
+
     const unlistenTurnStarted = listenToEvent<ConversationTurnStartedEvent>(
       TauriEvents.CONVERSATION_TURN_STARTED,
       (payload) => {
@@ -402,21 +464,11 @@ export function useConversationEventProjector() {
         if (phaseKind === 'cancelled') {
           return;
         }
-        dispatch(
-          messagesApi.util.updateQueryData(
-            'getMessages',
-            payload.chat_id,
-            (draft: Message[]) => {
-              const message = draft.find((m) => m.id === payload.message_id);
-              if (message) {
-                message.content += payload.chunk;
-                const codeBlocks = extractCodeBlocks(message.content);
-                message.codeBlocks =
-                  codeBlocks.length > 0 ? codeBlocks : undefined;
-              }
-            }
-          )
-        );
+        const key = messageKey(payload.chat_id, payload.message_id);
+        const nextContent =
+          getStoredContent(payload.chat_id, payload.message_id) + payload.chunk;
+        pendingContent.set(key, nextContent);
+        scheduleContentFlush(payload.chat_id, payload.message_id);
       }
     );
 
@@ -448,6 +500,8 @@ export function useConversationEventProjector() {
     const unlistenLlmComplete = listenToEvent<LlmCallCompleteEvent>(
       TauriEvents.LLM_CALL_COMPLETE,
       (payload) => {
+        flushContentImmediate(payload.chat_id, payload.message_id);
+        clearPendingContent(payload.chat_id, payload.message_id);
         handleLlmCallComplete(dispatch, payload);
       }
     );
@@ -455,6 +509,8 @@ export function useConversationEventProjector() {
     const unlistenComplete = listenToEvent<MessageCompleteEvent>(
       TauriEvents.MESSAGE_COMPLETE,
       (payload) => {
+        flushContentImmediate(payload.chat_id, payload.message_id);
+        clearPendingContent(payload.chat_id, payload.message_id);
         handleLlmCallComplete(dispatch, payload);
       }
     );
@@ -601,6 +657,11 @@ export function useConversationEventProjector() {
     );
 
     return () => {
+      for (const timer of flushTimers.values()) {
+        clearTimeout(timer);
+      }
+      flushTimers.clear();
+      pendingContent.clear();
       unlistenTurnStarted.then((fn) => fn());
       unlistenTurnQueued.then((fn) => fn());
       unlistenPhaseChanged.then((fn) => fn());

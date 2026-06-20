@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
-export function useChatScroll() {
+export function useChatScroll(isStreaming = false) {
   // Setup auto scroll hook
   const { scrollRef, contentRef } = useStickToBottom({
-    resize: 'smooth',
+    resize: isStreaming ? 'instant' : 'smooth',
     initial: 'smooth',
     damping: 0.15,
     stiffness: 0.08,

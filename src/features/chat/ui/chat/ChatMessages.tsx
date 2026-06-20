@@ -33,7 +33,7 @@ export function ChatMessages({
 
   const { pendingRequests, permissionTimeLeft, handlePermissionRespond } =
     useToolPermission();
-  const { contentRef, scrollAreaRef } = useChatScroll();
+  const { contentRef, scrollAreaRef } = useChatScroll(!!streamingMessageId);
 
   return (
     <ScrollArea ref={scrollAreaRef} className="flex-1 py-4">
