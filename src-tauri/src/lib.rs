@@ -3,6 +3,14 @@ mod db;
 mod error;
 mod events;
 mod features;
+#[cfg(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd"
+))]
+mod linux_window_chrome;
 mod menu;
 mod models;
 mod path_url;
@@ -100,6 +108,16 @@ pub fn run() {
                 if let Err(e) = window.set_focus() {
                     log::error!("Failed to focus window: {e}");
                 }
+
+                #[cfg(any(
+                    target_os = "linux",
+                    target_os = "dragonfly",
+                    target_os = "freebsd",
+                    target_os = "netbsd",
+                    target_os = "openbsd"
+                ))]
+                linux_window_chrome::configure_frameless_window(window);
+
                 // On macOS, ensure window is at position (0, 0) to remove any gap
                 #[cfg(target_os = "macos")]
                 {
@@ -174,6 +192,15 @@ pub fn run() {
             // Create and set menu
             let menu = menu::create_menu(app.handle())?;
             app.set_menu(menu)?;
+
+            #[cfg(any(
+                target_os = "linux",
+                target_os = "dragonfly",
+                target_os = "freebsd",
+                target_os = "netbsd",
+                target_os = "openbsd"
+            ))]
+            linux_window_chrome::hide_application_menubar(app.handle());
 
             // Handle menu events
             app.on_menu_event(|_window, event| {

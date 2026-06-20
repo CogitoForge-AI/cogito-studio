@@ -73,6 +73,7 @@ webview2-com = "0.38"
 windows = { version = "0.61", features = [] }
 
 [target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
+gtk = "0.18"
 webkit2gtk = "2.0"
 javascriptcore-rs = { version = "1.1", features = ["v2_28"] }
 [lints.clippy]

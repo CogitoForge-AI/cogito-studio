@@ -32,3 +32,6 @@ python-runtime
 !.agent/
 !.agent/**
 .tauri
+
+skills-lock.json
+.cursor
