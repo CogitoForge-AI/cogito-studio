@@ -81,17 +81,24 @@ jobs:
           tagName: __VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: 'Nexo __VERSION__'
           releaseBody: |
-            # Nexo v1.0.2
+            # Nexo v1.0.3
 
             ## What's New
 
-            - Per-chat conversation jobs so multiple chats can stream and run tools independently without blocking each other
+            - Browser panel is now available globally across the app
+            - Improved file attachment flow with smarter attachment extraction
+            - Compact chat sidebar and simplified settings dialogs
+
+            ## Improvements
+
+            - Smoother chat streaming with throttled markdown rendering
+            - Chat no longer auto-scrolls to the bottom while a reply is streaming
+            - Refined message list spacing and control layout
 
             ## Bug Fixes
 
-            - Fixed message order jumping while a turn is still streaming or running tools
-            - Fixed artifact browser preview staying on "Loading browser..." after closing and reopening the right panel
-            - Fixed Linux webview JavaScript evaluation for browser artifacts
+            - Fixed in-app updater to check for updates from this repository's GitHub releases
+            - Fixed stopping a streaming reply immediately when requested
 
             ---
 
