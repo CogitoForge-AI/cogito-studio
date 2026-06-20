@@ -14,7 +14,7 @@
   "slashOpenWorkspaceSettings": "Mở cài đặt workspace",
   "enterMessageCentered": "Tôi có thể giúp gì cho bạn hôm nay?",
   "enterVariableValues": "Nhập giá trị cho các biến sau:",
-  "exportChat": "Xuất Chat",
+  "exportChat": "Xuất cuộc trò chuyện",
   "failedToProcessImages": "Không thể xử lý hình ảnh",
   "fileTooLarge": "File quá lớn ({{size}}). Tối đa {{max}}.",
   "fileTypeNotSupported": "Loại file không được hỗ trợ: {{type}}",

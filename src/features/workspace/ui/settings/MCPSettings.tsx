@@ -5,6 +5,8 @@ import {
   CheckCircle2,
   Loader2,
   XCircle,
+  Wrench,
+  ExternalLink,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/atoms/button/button';
@@ -17,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/ui/atoms/select';
+import { EmptyState } from '@/ui/atoms/empty-state';
 import { cn } from '@/lib/utils';
 import type { MCPServerConnection } from '@/app/types';
 
@@ -32,6 +35,7 @@ interface MCPSettingsProps {
       prev: Record<string, 'require' | 'auto'>
     ) => Record<string, 'require' | 'auto'>
   ) => void;
+  onManageConnections?: () => void;
 }
 
 export function MCPSettings({
@@ -40,6 +44,7 @@ export function MCPSettings({
   onSelectedToolsChange,
   toolPermissionConfig,
   onToolPermissionConfigChange,
+  onManageConnections,
 }: MCPSettingsProps) {
   const { t } = useTranslation(['settings']);
   const [showAllMcpConnections, setShowAllMcpConnections] =
@@ -80,38 +85,45 @@ export function MCPSettings({
   };
 
   if (displayedConnections.length === 0) {
+    const hasConnections = allMcpConnections.length > 0;
+
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          {allMcpConnections.length > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={() => setShowAllMcpConnections(!showAllMcpConnections)}
-            >
-              {showAllMcpConnections ? (
-                <>
-                  <ChevronUp className="size-3 mr-1" />
-                  {t('showOnlyConnected', { ns: 'settings' })}
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="size-3 mr-1" />
-                  {t('showAll', { ns: 'settings' })}
-                </>
+      <div className="flex min-h-[min(60vh,420px)] flex-col items-center justify-center px-4">
+        <EmptyState
+          icon={Wrench}
+          title={
+            hasConnections
+              ? t('mcpToolsNoConnectedTitle', { ns: 'settings' })
+              : t('mcpToolsEmptyTitle', { ns: 'settings' })
+          }
+          description={
+            hasConnections
+              ? t('mcpToolsNoConnectedDescription', { ns: 'settings' })
+              : t('mcpToolsEmptyDescription', { ns: 'settings' })
+          }
+          className="py-8"
+          action={
+            <div className="flex flex-col items-center gap-2 sm:flex-row">
+              {onManageConnections && (
+                <Button size="sm" onClick={onManageConnections}>
+                  <ExternalLink className="mr-2 size-4" />
+                  {t('mcpToolsManageConnections', { ns: 'settings' })}
+                </Button>
               )}
-            </Button>
-          )}
-        </div>
-        <div className="text-sm text-muted-foreground py-2">
-          {allMcpConnections.length === 0
-            ? t('noMCPConnections', { ns: 'settings' })
-            : t('noConnectedMCPConnectionsAvailable', {
-                ns: 'settings',
-              })}
-        </div>
+              {hasConnections && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAllMcpConnections(true)}
+                >
+                  <ChevronDown className="mr-2 size-4" />
+                  {t('showAll', { ns: 'settings' })}
+                </Button>
+              )}
+            </div>
+          }
+        />
       </div>
     );
   }

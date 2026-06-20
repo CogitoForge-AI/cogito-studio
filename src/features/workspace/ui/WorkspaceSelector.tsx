@@ -53,8 +53,8 @@ export function WorkspaceSelector({
           className={cn(
             buttonVariants({ variant: 'ghost' }),
             compact
-              ? 'h-8 w-full justify-between gap-2 px-2 py-1 hover:bg-accent'
-              : 'h-auto gap-1.5 px-2 py-1 hover:bg-accent'
+              ? 'h-8 w-full justify-between gap-2 px-2 py-1'
+              : 'h-auto gap-1.5 px-2 py-1'
           )}
           data-tour="workspace-selector"
         >

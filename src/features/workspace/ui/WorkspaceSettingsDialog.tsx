@@ -46,6 +46,10 @@ import {
   showError,
   showSuccess,
 } from '@/features/notifications/state/notificationSlice';
+import {
+  navigateToSettings,
+  setSettingsSection,
+} from '@/features/ui/state/uiSlice';
 import { logger } from '@/lib/logger';
 import { useGetLLMConnectionsQuery } from '@/features/llm';
 import { useGetMCPConnectionsQuery } from '@/features/mcp';
@@ -319,6 +323,11 @@ export function WorkspaceSettingsDialog({
                       settings.toolPermissionConfig || {}
                     );
                     saveSettings({ toolPermissionConfig: newConfig });
+                  }}
+                  onManageConnections={() => {
+                    onOpenChange(false);
+                    dispatch(navigateToSettings());
+                    dispatch(setSettingsSection('mcp'));
                   }}
                 />
               </div>

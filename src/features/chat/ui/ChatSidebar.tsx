@@ -6,19 +6,11 @@ import {
   Settings,
   SlidersHorizontal,
   Download,
-  FileText,
-  FileJson,
   Search,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
 import { Button } from '@/ui/atoms/button/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/ui/atoms/dropdown-menu';
 import { Input } from '@/ui/atoms/input';
 import { ScrollArea } from '@/ui/atoms/scroll-area';
 import { Separator } from '@/ui/atoms/separator';
@@ -46,7 +38,7 @@ import { ConfirmDialog } from '@/ui/molecules/ConfirmDialog';
 import { SidebarUpdateButton } from '@/features/updater/ui/SidebarUpdateButton';
 
 const sidebarActionClass =
-  'flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] text-sidebar-foreground transition-colors hover:bg-accent hover:text-accent-foreground';
+  'flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] text-sidebar-foreground';
 
 export function ChatSidebar() {
   // Use workspaces hook to get selectedWorkspaceId
@@ -62,7 +54,7 @@ export function ChatSidebar() {
     handleDeleteChat,
     handleRenameChat,
   } = useChats(selectedWorkspaceId);
-  const { handleExportMarkdown, handleExportJSON } = useExportChat();
+  const { handleExportMarkdown } = useExportChat();
   const { t } = useTranslation(['common', 'chat', 'settings']);
   const dispatch = useAppDispatch();
   const [contextMenu, setContextMenu] = useState<{
@@ -132,14 +124,7 @@ export function ChatSidebar() {
     }
   };
 
-  const handleExport = async (
-    e: React.MouseEvent,
-    chatId: string,
-    format: 'md' | 'json'
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-
+  const handleExport = async (chatId: string) => {
     try {
       const messages = await invokeCommand<Message[]>(
         TauriCommands.GET_MESSAGES,
@@ -148,11 +133,7 @@ export function ChatSidebar() {
         }
       );
 
-      if (format === 'md') {
-        handleExportMarkdown(chatId, messages);
-      } else {
-        handleExportJSON(chatId, messages);
-      }
+      handleExportMarkdown(chatId, messages);
     } catch (error) {
       logger.error('Failed to export chat from sidebar:', error);
     }
@@ -217,8 +198,7 @@ export function ChatSidebar() {
                     <div
                       key={chat.id}
                       className={cn(
-                        'group relative min-w-0 cursor-pointer overflow-hidden rounded-md py-1.5 pl-3 pr-8 transition-colors',
-                        'hover:bg-accent hover:text-accent-foreground',
+                        'relative min-w-0 cursor-pointer overflow-hidden rounded-md px-3 py-1.5',
                         selectedChatId === chat.id
                           ? 'bg-accent text-accent-foreground'
                           : 'text-muted-foreground'
@@ -261,44 +241,6 @@ export function ChatSidebar() {
                           </div>
                         );
                       })()}
-
-                      <div className="absolute right-0.5 top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-6 p-0 hover:bg-accent"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }}
-                            >
-                              <Download className="size-3.5 text-muted-foreground" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
-                          >
-                            <DropdownMenuItem
-                              onClick={(e) => handleExport(e, chat.id, 'md')}
-                            >
-                              <FileText className="mr-2 size-4" />
-                              Markdown (.md)
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => handleExport(e, chat.id, 'json')}
-                            >
-                              <FileJson className="mr-2 size-4" />
-                              JSON (.json)
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
                     </div>
                   ))}
               </div>
@@ -325,6 +267,12 @@ export function ChatSidebar() {
                   label: t('common:rename'),
                   icon: <Pencil className="size-4" />,
                   onClick: () => handleRenameClick(contextMenu.chatId),
+                  variant: 'default',
+                },
+                {
+                  label: t('chat:exportChat'),
+                  icon: <Download className="size-4" />,
+                  onClick: () => handleExport(contextMenu.chatId),
                   variant: 'default',
                 },
                 {
