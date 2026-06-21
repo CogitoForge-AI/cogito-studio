@@ -81,24 +81,23 @@ jobs:
           tagName: __VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: 'Nexo __VERSION__'
           releaseBody: |
-            # Nexo v1.0.3
+            # Nexo v1.0.6
 
             ## What's New
 
-            - Browser panel is now available globally across the app
-            - Improved file attachment flow with smarter attachment extraction
-            - Compact chat sidebar and simplified settings dialogs
+            - Export conversations as Markdown from the sidebar context menu
+            - Redesigned empty state for MCP tools in workspace settings with a shortcut to manage connections
 
             ## Improvements
 
-            - Smoother chat streaming with throttled markdown rendering
-            - Chat no longer auto-scrolls to the bottom while a reply is streaming
-            - Refined message list spacing and control layout
+            - Cleaner sidebar interactions without hover highlights on menu items
+            - Linux browser panel hides the native toolbar for a more integrated look
+            - Artifact file previews use a more reliable file URL path on all platforms
 
             ## Bug Fixes
 
-            - Fixed in-app updater to check for updates from this repository's GitHub releases
-            - Fixed stopping a streaming reply immediately when requested
+            - Fixed Linux browser iframe panel, artifact sync, and chat scroll behavior
+            - Fixed Windows MCP server path handling for subprocess environments
 
             ---
 
