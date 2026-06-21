@@ -1,4 +1,5 @@
 import { navigateBrowserTab, reloadBrowserTab } from '../state/browserApi';
+import { isLinuxDesktop } from './platform';
 
 type PendingPanelNavigation = {
   tabId: string;
@@ -11,11 +12,6 @@ let pending: PendingPanelNavigation | null = null;
 
 /** Minimum host size before treating the native webview as ready to navigate. */
 export const PANEL_WEBVIEW_MIN_HOST_SIZE = 50;
-
-function isLinuxPlatform(): boolean {
-  const ua = navigator.userAgent.toLowerCase();
-  return !ua.includes('mac') && !ua.includes('win');
-}
 
 export function requestPanelNavigation(
   tabId: string,
@@ -38,6 +34,8 @@ export async function notifyPanelWebviewVisible(
   width: number,
   height: number
 ): Promise<void> {
+  if (isLinuxDesktop()) return;
+
   if (
     !pending ||
     pending.tabId !== tabId ||
@@ -53,13 +51,13 @@ export async function notifyPanelWebviewVisible(
 
   try {
     await navigateBrowserTab(url, tabId);
-    // WebKitGTK on Linux may not paint until a reload after the webview is shown.
-    if (isLinuxPlatform()) {
-      await reloadBrowserTab(tabId);
-    }
     resolve();
   } catch (error) {
     reject(error);
     throw error;
   }
+}
+
+export async function reloadPanelTab(tabId: string): Promise<void> {
+  await reloadBrowserTab(tabId);
 }

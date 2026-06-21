@@ -52,7 +52,7 @@
   "configurePrompt": "Cấu hình prompt của bạn",
   "configureWorkspace": "Cấu hình workspace: {{name}}",
   "confirmClearAllChats": "Bạn có chắc chắn muốn xóa tất cả chat trong workspace này? Hành động này không thể hoàn tác.",
-  "confirmDeleteChat": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này",
+  "confirmDeleteChat": "Bạn có chắc chắn muốn xóa cuộc trò chuyện \"{{title}}\"? Hành động này không thể hoàn tác.",
   "confirmDeleteConnection": "Bạn có chắc chắn muốn xóa connection này",
   "confirmDeletePrompt": "Bạn có chắc chắn muốn xóa prompt này không?",
   "confirmDeleteWorkspace": "Bạn có chắc chắn muốn xoá workspace này không?",

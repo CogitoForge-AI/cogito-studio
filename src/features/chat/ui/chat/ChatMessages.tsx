@@ -7,6 +7,7 @@ import { useToolPermission } from '../../hooks/useToolPermission';
 import { CHAT_WIDTH_CLASSES } from '../ChatLayout';
 
 interface ChatMessagesProps {
+  chatId: string | null;
   messages: Message[];
   isLoading: boolean;
   streamingMessageId: string | null;
@@ -15,6 +16,7 @@ interface ChatMessagesProps {
 }
 
 export function ChatMessages({
+  chatId,
   messages,
   isLoading,
   streamingMessageId,
@@ -27,7 +29,7 @@ export function ChatMessages({
     useToolPermission();
 
   return (
-    <ChatScrollArea messageCount={messages.length}>
+    <ChatScrollArea chatId={chatId} messageCount={messages.length}>
       <MessageList
         messages={messages}
         enableStreaming={true}

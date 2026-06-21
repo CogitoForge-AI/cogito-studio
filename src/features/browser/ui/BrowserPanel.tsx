@@ -33,6 +33,7 @@ export function BrowserPanel() {
       loading ||
       panelTabs.length > 0 ||
       browserPendingUrl ||
+      openingPendingRef.current ||
       initializingRef.current
     ) {
       return;

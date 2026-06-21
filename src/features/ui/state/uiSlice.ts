@@ -290,6 +290,10 @@ const uiSlice = createSlice({
       state.rightPanelTab = 'browser';
       state.isRightPanelOpen = true;
     },
+    openArtifactsInRightPanel: (state) => {
+      state.rightPanelTab = 'artifacts';
+      state.isRightPanelOpen = true;
+    },
     clearBrowserPendingUrl: (state) => {
       state.browserPendingUrl = null;
     },
@@ -359,6 +363,7 @@ export const {
   setRightPanelOpen,
   setRightPanelTab,
   openBrowserInRightPanel,
+  openArtifactsInRightPanel,
   clearBrowserPendingUrl,
   setEnableWorkflowEditor,
   setSetupCompleted,

@@ -1,4 +1,6 @@
 mod ask_user;
+// TODO: Re-enable browser automation tools in `default_tools` once cross-platform stability improves.
+#[allow(dead_code)]
 mod browser;
 mod create_artifact;
 mod list_dir;
@@ -10,17 +12,17 @@ mod write_file;
 use crate::error::AppError;
 use crate::features::app_settings::service::AppSettingsService;
 use crate::features::artifacts::ArtifactService;
-use crate::features::browser::BrowserService;
 use crate::features::tool::core::context::ToolExecutionContext;
 use crate::features::tool::core::result::ToolResult;
 use crate::features::tool::core::spec::ToolSpec;
 use crate::features::tool::core::traits::{Tool, ToolSource};
 use ask_user::AskUserTool;
 use async_trait::async_trait;
-use browser::{
-    BrowserClickTool, BrowserGetContentTool, BrowserNavigateTool, BrowserScreenshotTool,
-    BrowserTypeTool,
-};
+// TODO: Re-enable when browser automation tools are restored.
+// use browser::{
+//     BrowserClickTool, BrowserGetContentTool, BrowserNavigateTool, BrowserScreenshotTool,
+//     BrowserTypeTool,
+// };
 use create_artifact::CreateArtifactTool;
 use list_dir::ListDirTool;
 use read_file::ReadFileTool;
@@ -47,20 +49,18 @@ pub struct BuiltinToolSource {
 
 impl BuiltinToolSource {
     pub fn new() -> Self {
-        Self::with_tools(default_tools(None, false, None, None))
+        Self::with_tools(default_tools(None, false, None))
     }
 
     pub fn with_web_search(
         app_settings_service: Arc<AppSettingsService>,
         web_search_available: bool,
         artifact_service: Arc<ArtifactService>,
-        browser_service: Arc<BrowserService>,
     ) -> Self {
         Self::with_tools(default_tools(
             Some(app_settings_service),
             web_search_available,
             Some(artifact_service),
-            Some(browser_service),
         ))
     }
 
@@ -116,7 +116,6 @@ fn default_tools(
     app_settings_service: Option<Arc<AppSettingsService>>,
     web_search_available: bool,
     artifact_service: Option<Arc<ArtifactService>>,
-    browser_service: Option<Arc<BrowserService>>,
 ) -> Vec<Arc<dyn Tool>> {
     let mut tools: Vec<Arc<dyn Tool>> = vec![
         Arc::new(ReadFileTool),
@@ -136,13 +135,15 @@ fn default_tools(
         }
     }
 
-    if let Some(service) = browser_service {
-        tools.push(Arc::new(BrowserNavigateTool::new(service.clone())));
-        tools.push(Arc::new(BrowserClickTool::new(service.clone())));
-        tools.push(Arc::new(BrowserTypeTool::new(service.clone())));
-        tools.push(Arc::new(BrowserScreenshotTool::new(service.clone())));
-        tools.push(Arc::new(BrowserGetContentTool::new(service)));
-    }
+    // TODO: Re-enable browser automation tools once cross-platform stability improves.
+    // Tools: browser_navigate, browser_click, browser_type, browser_screenshot, browser_get_content
+    // if let Some(service) = browser_service {
+    //     tools.push(Arc::new(BrowserNavigateTool::new(service.clone())));
+    //     tools.push(Arc::new(BrowserClickTool::new(service.clone())));
+    //     tools.push(Arc::new(BrowserTypeTool::new(service.clone())));
+    //     tools.push(Arc::new(BrowserScreenshotTool::new(service.clone())));
+    //     tools.push(Arc::new(BrowserGetContentTool::new(service)));
+    // }
 
     tools
 }

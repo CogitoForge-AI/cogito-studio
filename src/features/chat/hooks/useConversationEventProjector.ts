@@ -16,6 +16,7 @@ import {
   nextTurnMessageTimestamps,
   toolCallMessageId,
 } from '@/features/chat/lib/messageTimestamps';
+import { takePendingUserTurnSeed } from '@/features/chat/lib/pendingUserTurnSeed';
 import { logger } from '@/lib/logger';
 import {
   isActiveConversationPhase,
@@ -24,6 +25,7 @@ import {
   setTurnStarted,
   type ConversationPhase,
 } from '@/features/chat/state/conversationRuntimeSlice';
+import { applyArtifactCreated } from '@/features/artifacts/lib/applyArtifactCreated';
 
 interface MessageStartedEvent {
   chat_id: string;
@@ -241,6 +243,8 @@ function upsertTurnMessages(
   userMessageId: string,
   assistantMessageId: string
 ) {
+  const pendingSeed = takePendingUserTurnSeed(chatId);
+
   dispatch(
     messagesApi.util.updateQueryData('getMessages', chatId, (draft) => {
       const needsUser = !draft.some((m) => m.id === userMessageId);
@@ -254,10 +258,22 @@ function upsertTurnMessages(
         draft.push({
           id: userMessageId,
           role: 'user',
-          content: '',
+          content: pendingSeed?.content ?? '',
           timestamp: userTimestamp,
+          ...(pendingSeed?.metadata !== undefined
+            ? { metadata: pendingSeed.metadata }
+            : {}),
         });
+      } else if (pendingSeed) {
+        const userMessage = draft.find((m) => m.id === userMessageId);
+        if (userMessage) {
+          userMessage.content = pendingSeed.content;
+          if (pendingSeed.metadata !== undefined) {
+            userMessage.metadata = pendingSeed.metadata;
+          }
+        }
       }
+
       if (needsAssistant) {
         draft.push({
           id: assistantMessageId,
@@ -584,6 +600,15 @@ export function useConversationEventProjector() {
         TauriEvents.TOOL_EXECUTION_PROGRESS,
         (payload) => {
           upsertToolCallMessage(dispatch, payload);
+          if (
+            payload.tool_name === 'create_artifact' &&
+            payload.status === 'completed'
+          ) {
+            const selectedChatId = store.getState().chats.selectedChatId;
+            if (payload.chat_id === selectedChatId) {
+              applyArtifactCreated(dispatch, payload.chat_id);
+            }
+          }
         }
       );
 

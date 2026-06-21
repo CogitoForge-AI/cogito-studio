@@ -4,6 +4,10 @@ import type { AppDispatch, RootState } from '@/app/store';
 import { resolveModelCapabilities } from '@/features/llm/lib/model-utils';
 import { validateAndExtractState } from '../helpers/sendMessage/stateValidation';
 import { messagesApi } from '../../messagesApi';
+import {
+  setPendingUserTurnSeed,
+  takePendingUserTurnSeed,
+} from '@/features/chat/lib/pendingUserTurnSeed';
 import type { StartTurnResult } from './sendMessageNew';
 
 export function createEditAndResendMessageThunk() {
@@ -45,6 +49,14 @@ export function createEditAndResendMessageThunk() {
       const context = validateAndExtractState(state, chatId);
       const { isThinkingEnabled, reasoningEffort } = state.chatInput;
 
+      const { updateChatLastMessage } = await import('../../chatsSlice');
+      dispatch(updateChatLastMessage({ id: chatId, lastMessage: newContent }));
+
+      setPendingUserTurnSeed(chatId, {
+        content: newContent,
+        metadata,
+      });
+
       const model = context.llmConnection.models?.find(
         (m) => m.id === context.selectedModel
       );
@@ -68,9 +80,34 @@ export function createEditAndResendMessageThunk() {
         }
       );
 
+      (dispatch as AppDispatch)(
+        messagesApi.util.updateQueryData('getMessages', chatId, (draft) => {
+          const userMessage = draft.find(
+            (m) => m.id === result.user_message_id
+          );
+          if (userMessage) {
+            userMessage.content = newContent;
+            if (metadata !== undefined) {
+              userMessage.metadata = metadata;
+            }
+            return;
+          }
+
+          draft.push({
+            id: result.user_message_id,
+            role: 'user',
+            content: newContent,
+            timestamp: Date.now(),
+            ...(metadata !== undefined ? { metadata } : {}),
+          });
+        })
+      );
+
+      takePendingUserTurnSeed(chatId);
+
       return {
         chatId,
-        messageId,
+        messageId: result.user_message_id,
         assistantMessageId: result.assistant_message_id,
         turnId: result.turn_id,
       };

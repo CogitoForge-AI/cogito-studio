@@ -348,14 +348,18 @@ export function ChatSidebar() {
       {/* Delete Chat Dialog */}
       <ConfirmDialog
         open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) setChatToDelete(null);
+        }}
         title={t('settings:deleteChat')}
-        description={`${t('settings:confirmDeleteChat')} ${
-          chats.find((c) => c.id === chatToDelete)?.title || ''
-        }?`}
+        description={t('settings:confirmDeleteChat', {
+          title: chats.find((c) => c.id === chatToDelete)?.title ?? '',
+        })}
         onConfirm={handleConfirmDelete}
         confirmLabel={t('common:delete')}
         isLoading={isDeletingChat}
+        compact
       />
     </div>
   );

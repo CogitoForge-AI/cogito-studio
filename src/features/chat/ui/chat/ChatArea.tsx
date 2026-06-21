@@ -444,6 +444,7 @@ export function ChatArea() {
     <>
       {/* Messages Area */}
       <ChatMessages
+        chatId={selectedChatId}
         messages={messages}
         isLoading={isStreaming}
         streamingMessageId={streamingMessageId}

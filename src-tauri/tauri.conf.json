@@ -30,18 +30,21 @@
       }
     ],
     "security": {
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/**", "$APPLOCALDATA/**"]
+      },
       "dangerousDisableAssetCspModification": [
         "style-src",
         "script-src",
         "img-src",
         "font-src",
         "connect-src",
-        "frame-src",
         "object-src",
         "base-uri",
         "form-action"
       ],
-      "csp": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://esm.sh https://cdn.skypack.dev"
+      "csp": "default-src 'self'; frame-src 'self' http://localhost:1420 http://127.0.0.1:1420 http://ipc.localhost https: http: asset: http://asset.localhost blob: data:; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://esm.sh https://cdn.skypack.dev"
     }
   },
   "bundle": {

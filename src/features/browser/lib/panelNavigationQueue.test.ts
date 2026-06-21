@@ -12,6 +12,10 @@ vi.mock('../state/browserApi', () => ({
   reloadBrowserTab: (...args: unknown[]) => reloadBrowserTab(...args),
 }));
 
+vi.mock('./platform', () => ({
+  isLinuxDesktop: () => false,
+}));
+
 describe('panelNavigationQueue', () => {
   beforeEach(() => {
     navigateBrowserTab.mockReset();

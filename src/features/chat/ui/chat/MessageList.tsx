@@ -117,22 +117,28 @@ export const MessageList = memo(function MessageList({
   }, [renderUnits, streamingMessageId]);
 
   return (
-    <div className={cn('flex flex-col', className)}>
+    <div className={cn('flex flex-col gap-4', className)}>
       {renderUnits.map((unit, index) => {
+        const prevUnit = index > 0 ? renderUnits[index - 1] : null;
+        const nextUnit =
+          index < renderUnits.length - 1 ? renderUnits[index + 1] : null;
+        const isTurnStart =
+          prevUnit?.kind === 'user' && unit.kind === 'assistant_turn';
         const spacingClass =
-          index === 0
-            ? undefined
-            : renderUnits[index - 1]?.kind === 'user' &&
-                unit.kind === 'assistant_turn'
-              ? 'my-2'
-              : 'my-4';
+          index === 0 ? undefined : isTurnStart ? 'mt-3' : 'mt-6';
 
         if (unit.kind === 'user') {
           const message = unit.message;
           const isMarkdownEnabled = markdownEnabled[message.id] !== false;
 
           return (
-            <div key={message.id} className={spacingClass}>
+            <div
+              key={message.id}
+              className={cn(
+                spacingClass,
+                nextUnit?.kind === 'assistant_turn' && 'mb-1'
+              )}
+            >
               <MessageItem
                 message={message}
                 markdownEnabled={isMarkdownEnabled}

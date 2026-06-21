@@ -398,6 +398,21 @@
   font-size: var(--text-base);
 }
 
+/* Shrink-wrap text blocks so selection highlight follows content width */
+.markdown-content :is(p, h1, h2, h3, h4, h5, h6, li, blockquote) {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.markdown-content ::selection {
+  background-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: inherit;
+}
+
+.dark .markdown-content ::selection {
+  background-color: color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
 .markdown-content p {
   margin-bottom: 1rem;
 }

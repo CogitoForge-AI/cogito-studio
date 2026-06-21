@@ -271,6 +271,22 @@ impl WebviewFactory {
             return Ok(());
         }
 
+        // Linux child webviews are packed into the main window GtkBox (not positioned
+        // overlays). Showing them covers the entire app; panel/fence use iframe instead.
+        #[cfg(any(
+            target_os = "linux",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
+        ))]
+        {
+            let _ = webview.hide();
+            let mut life = tab.lifecycle.lock().await;
+            *life = WebviewLifecycle::Hidden;
+            return Ok(());
+        }
+
         webview
             .set_position(LogicalPosition::new(x, y))
             .map_err(|e| AppError::Generic(e.to_string()))?;

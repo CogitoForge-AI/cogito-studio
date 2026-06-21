@@ -1,3 +1,6 @@
+// TODO: Re-enable registration in `builtin/mod.rs` once cross-platform browser automation is stable.
+#![allow(dead_code)]
+
 use crate::error::AppError;
 use crate::features::browser::BrowserService;
 use crate::features::tool::core::context::ToolExecutionContext;

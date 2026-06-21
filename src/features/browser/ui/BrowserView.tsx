@@ -133,13 +133,14 @@ export function BrowserView({
       >
         <BrowserWebviewHost
           tabId={displayTabId}
+          contentUrl={displayUrl}
           viewport={showChrome ? 'main_panel' : 'fence'}
           anchorId={fenceAnchorId}
           className={cn('min-h-64 rounded-none border-0', streamClassName)}
         />
       </Suspense>
     );
-  }, [displayTabId, showChrome, fenceAnchorId, streamClassName]);
+  }, [displayTabId, displayUrl, showChrome, fenceAnchorId, streamClassName]);
 
   if (!showChrome) {
     return (

@@ -144,10 +144,12 @@ export const MessageItem = memo(
           message.role === 'user' ? 'justify-end' : 'justify-start'
         )}
         style={
-          {
-            contentVisibility: 'auto',
-            containIntrinsicSize: '100px',
-          } as React.CSSProperties
+          message.role === 'user'
+            ? undefined
+            : ({
+                contentVisibility: 'auto',
+                containIntrinsicSize: '100px',
+              } as React.CSSProperties)
         }
       >
         <div

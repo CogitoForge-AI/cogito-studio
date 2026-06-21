@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { NotesPanel } from '@/features/notes/ui/NotesPanel';
 import { ArtifactsPanel } from '@/features/artifacts/ui/ArtifactsPanel';
+import { useGetArtifactsQuery } from '@/features/artifacts/state/artifactsApi';
 import { BrowserPanel } from '@/features/browser/ui/BrowserPanel';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/atoms/tooltip';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
@@ -12,6 +13,10 @@ export function ChatRightPanel() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(['artifacts', 'browser', 'common']);
   const activeTab = useAppSelector((state) => state.ui.rightPanelTab);
+  const selectedChatId = useAppSelector((state) => state.chats.selectedChatId);
+
+  // Keep artifact cache subscribed while the right panel is mounted so invalidations refetch immediately.
+  useGetArtifactsQuery(selectedChatId ?? '', { skip: !selectedChatId });
 
   const tabs = [
     { id: 'notes' as const, icon: FileText, label: t('common:notes') },

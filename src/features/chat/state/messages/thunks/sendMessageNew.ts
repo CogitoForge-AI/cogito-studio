@@ -4,6 +4,10 @@ import type { AppDispatch, RootState } from '@/app/store';
 import { resolveModelCapabilities } from '@/features/llm/lib/model-utils';
 import { validateAndExtractState } from '../helpers/sendMessage/stateValidation';
 import { messagesApi } from '../../messagesApi';
+import {
+  setPendingUserTurnSeed,
+  takePendingUserTurnSeed,
+} from '@/features/chat/lib/pendingUserTurnSeed';
 
 export interface StartTurnResult {
   turn_id: string;
@@ -41,6 +45,8 @@ export function createSendMessageThunkNew() {
       const { updateChatLastMessage } = await import('../../chatsSlice');
       dispatch(updateChatLastMessage({ id: chatId, lastMessage: content }));
 
+      setPendingUserTurnSeed(chatId, { content, metadata });
+
       const model = context.llmConnection.models?.find(
         (m) => m.id === context.selectedModel
       );
@@ -70,9 +76,23 @@ export function createSendMessageThunkNew() {
           );
           if (userMessage) {
             userMessage.content = content;
+            if (metadata !== undefined) {
+              userMessage.metadata = metadata;
+            }
+            return;
           }
+
+          draft.push({
+            id: result.user_message_id,
+            role: 'user',
+            content,
+            timestamp: Date.now(),
+            ...(metadata !== undefined ? { metadata } : {}),
+          });
         })
       );
+
+      takePendingUserTurnSeed(chatId);
 
       return result;
     }

@@ -1,57 +1,43 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { listenToEvent, TauriEvents } from '@/lib/tauri';
 import { store } from '@/app/store';
-import { artifactsApi } from '../state/artifactsApi';
-import {
-  setRightPanelOpen,
-  setRightPanelTab,
-} from '@/features/ui/state/uiSlice';
+import { applyArtifactCreated } from '../lib/applyArtifactCreated';
 import type { ArtifactCreatedEvent } from '../types';
 
-let listenerCount = 0;
-let unlistenPromise: Promise<() => void> | null = null;
+let listenerPromise: Promise<() => void> | null = null;
+let subscriberCount = 0;
 
-async function ensureListener(): Promise<() => void> {
-  if (!unlistenPromise) {
-    unlistenPromise = listenToEvent<ArtifactCreatedEvent>(
+function handleArtifactCreated(payload: ArtifactCreatedEvent): void {
+  const selectedChatId = store.getState().chats.selectedChatId;
+  if (payload.chat_id !== selectedChatId) return;
+
+  applyArtifactCreated(store.dispatch, payload.chat_id, payload.artifact);
+}
+
+function ensureListener(): Promise<() => void> {
+  if (!listenerPromise) {
+    listenerPromise = listenToEvent<ArtifactCreatedEvent>(
       TauriEvents.ARTIFACT_CREATED,
-      (payload) => {
-        const selectedChatId = store.getState().chats.selectedChatId;
-        if (payload.chat_id !== selectedChatId) return;
-
-        store.dispatch(
-          artifactsApi.util.invalidateTags([
-            { type: 'Artifact', id: payload.chat_id },
-          ])
-        );
-        store.dispatch(setRightPanelOpen(true));
-        store.dispatch(setRightPanelTab('artifacts'));
-      }
+      handleArtifactCreated
     );
   }
-  return unlistenPromise;
+  return listenerPromise;
 }
 
 /** Singleton listener — refreshes artifacts and opens the panel when a new artifact is created. */
 export function useArtifactCreatedListener(): void {
-  const mountedRef = useRef(false);
-
   useEffect(() => {
-    if (mountedRef.current) return;
-    mountedRef.current = true;
-    listenerCount += 1;
-
-    let unlisten: (() => void) | undefined;
-    ensureListener().then((fn) => {
-      unlisten = fn;
-    });
+    subscriberCount += 1;
+    void ensureListener();
 
     return () => {
-      listenerCount -= 1;
-      if (listenerCount === 0 && unlisten) {
-        unlisten();
-        unlistenPromise = null;
-      }
+      subscriberCount -= 1;
+      if (subscriberCount > 0) return;
+
+      subscriberCount = 0;
+      const promise = listenerPromise;
+      listenerPromise = null;
+      void promise?.then((unlisten) => unlisten());
     };
   }, []);
 }
