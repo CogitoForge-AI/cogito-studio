@@ -81,23 +81,14 @@ jobs:
           tagName: __VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: 'Nexo __VERSION__'
           releaseBody: |
-            # Nexo v1.0.6
-
-            ## What's New
-
-            - Export conversations as Markdown from the sidebar context menu
-            - Redesigned empty state for MCP tools in workspace settings with a shortcut to manage connections
+            # Nexo v1.0.7
 
             ## Improvements
 
-            - Cleaner sidebar interactions without hover highlights on menu items
-            - Linux browser panel hides the native toolbar for a more integrated look
-            - Artifact file previews use a more reliable file URL path on all platforms
-
-            ## Bug Fixes
-
-            - Fixed Linux browser iframe panel, artifact sync, and chat scroll behavior
-            - Fixed Windows MCP server path handling for subprocess environments
+            - Updated website install scripts to use nexo.nkthanh.dev for one-command setup on macOS, Linux, and Windows
+            - Redesigned landing page install section with direct downloads from GitHub Releases
+            - Linux installers can be downloaded as .deb, .rpm, or AppImage from the website
+            - Click install scripts on the website to copy them to the clipboard
 
             ---
 
