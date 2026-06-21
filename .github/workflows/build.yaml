@@ -81,14 +81,16 @@ jobs:
           tagName: __VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: 'Nexo __VERSION__'
           releaseBody: |
-            # Nexo v1.0.7
+            # Nexo v1.0.8
 
             ## Improvements
 
-            - Updated website install scripts to use nexo.nkthanh.dev for one-command setup on macOS, Linux, and Windows
-            - Redesigned landing page install section with direct downloads from GitHub Releases
-            - Linux installers can be downloaded as .deb, .rpm, or AppImage from the website
-            - Click install scripts on the website to copy them to the clipboard
+            - Redesigned sidebar and app settings with a cleaner, minimalist layout
+            - Settings sidebar width now matches the chat sidebar
+            - LaTeX math rendering in chat messages (KaTeX)
+            - Fullscreen preview for HTML and markdown artifacts
+            - Simplified chat input toolbar (removed active tools overlay)
+            - Consistent default cursor across the app
 
             ---
 
