@@ -28,52 +28,51 @@ Nexo is a cross-platform desktop AI assistant built with Tauri, React, and Rust.
 
 ## Installation
 
-### Quick install (macOS + Linux)
+### macOS
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/Nexo-Agent/nexo/refs/heads/main/installer.sh)
+bash <(curl -fsSL https://nexo.nkthanh.dev/installer.sh)
 ```
 
-You can pin a version by setting `VERSION`, for example:
+Download the `.dmg` installer from [Releases](https://github.com/Nexo-Agent/nexo/releases).
+
+### Linux
 
 ```bash
-VERSION=0.1.0-beta.22 bash <(curl -fsSL https://raw.githubusercontent.com/Nexo-Agent/nexo/refs/heads/main/installer.sh)
+bash <(curl -fsSL https://nexo.nkthanh.dev/installer.sh)
 ```
 
-### Quick install (Windows 10+)
+Download the `.deb` or `.AppImage` from [Releases](https://github.com/Nexo-Agent/nexo/releases).
+
+### Windows
 
 Run in PowerShell:
 
 ```powershell
-& ([ScriptBlock]::Create((iwr -useb https://raw.githubusercontent.com/Nexo-Agent/nexo/refs/heads/main/installer-windows.ps1)))
+& ([ScriptBlock]::Create((iwr -useb https://nexo.nkthanh.dev/installer-windows.ps1)))
 ```
 
-Pin a version:
+Download the `.msi` or `.exe` installer from [Releases](https://github.com/Nexo-Agent/nexo/releases).
 
-```powershell
-& ([ScriptBlock]::Create((iwr -useb https://raw.githubusercontent.com/Nexo-Agent/nexo/refs/heads/main/installer-windows.ps1))) -Version "0.1.0-beta.22"
-```
+#### Options
 
-Silent install (run PowerShell as Administrator):
-
-```powershell
-& ([ScriptBlock]::Create((iwr -useb https://raw.githubusercontent.com/Nexo-Agent/nexo/refs/heads/main/installer-windows.ps1))) -Silent
-```
-
-### MacOS Via Homebrew
+Pin a version (macOS/Linux):
 
 ```bash
-brew tap nexo-agent/nexo
-brew install --cask nexo
+VERSION=0.1.0-beta.22 bash <(curl -fsSL https://nexo.nkthanh.dev/installer.sh)
 ```
 
-### Windows
+Pin a version (Windows):
 
-Download the latest release for your platform from the [Releases](https://github.com/Nexo-Agent/nexo/releases) page and run the `.msi` or `.exe` installer
+```powershell
+& ([ScriptBlock]::Create((iwr -useb https://nexo.nkthanh.dev/installer-windows.ps1))) -Version "0.1.0-beta.22"
+```
 
-### Linux
+Silent install on Windows (run PowerShell as Administrator):
 
-Download the latest release for your platform from the [Releases](https://github.com/Nexo-Agent/nexo/releases) page and run the `.deb` or `.AppImage` file
+```powershell
+& ([ScriptBlock]::Create((iwr -useb https://nexo.nkthanh.dev/installer-windows.ps1))) -Silent
+```
 
 ## Star History
 

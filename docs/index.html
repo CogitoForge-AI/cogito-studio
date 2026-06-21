@@ -69,6 +69,14 @@
         text-decoration: none;
       }
 
+      a.btn {
+        cursor: pointer;
+      }
+
+      button.btn {
+        cursor: pointer;
+      }
+
       img {
         display: block;
         max-width: 100%;
@@ -682,6 +690,12 @@
         );
         opacity: 0;
         transition: opacity 0.35s ease;
+        pointer-events: none;
+      }
+
+      .glass-card > * {
+        position: relative;
+        z-index: 1;
       }
 
       .glass-card:hover {
@@ -934,6 +948,18 @@
       .platform-grid {
         display: grid;
         gap: 1rem;
+        align-items: stretch;
+      }
+
+      .platform-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: visible;
+      }
+
+      .glass-card.platform-card {
+        overflow: visible;
       }
 
       .platform-card header {
@@ -962,6 +988,102 @@
         font-size: 0.9375rem;
       }
 
+      .platform-download {
+        margin-top: auto;
+        padding-top: 1rem;
+      }
+
+      .platform-download .btn {
+        width: 100%;
+        cursor: pointer;
+      }
+
+      .linux-download {
+        position: relative;
+      }
+
+      .platform-card:has(.linux-download.is-open) {
+        z-index: 31;
+      }
+
+      .linux-download-toggle {
+        border: none;
+        font: inherit;
+        justify-content: flex-start;
+      }
+
+      .linux-download-toggle svg:last-child {
+        width: 1rem;
+        height: 1rem;
+        margin-left: auto;
+        transition: transform 0.2s ease;
+      }
+
+      .linux-download.is-open .linux-download-toggle svg:last-child {
+        transform: rotate(180deg);
+      }
+
+      .linux-download-menu {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        right: 0;
+        z-index: 30;
+        display: none;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        margin: 0;
+        border-radius: var(--radius);
+        border: 1px solid var(--border-hover);
+        background: rgba(8, 12, 22, 0.98);
+        backdrop-filter: blur(16px);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+      }
+
+      .linux-download.is-open .linux-download-menu {
+        display: flex;
+      }
+
+      .linux-download-option {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.15rem;
+        width: 100%;
+        padding: 0.7rem 1rem;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--text-primary);
+        font: inherit;
+        font-size: 0.875rem;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          background 0.2s ease,
+          border-color 0.2s ease;
+      }
+
+      .linux-download-option:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: var(--border-hover);
+      }
+
+      .linux-download-option:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .linux-download-option-label {
+        font-weight: 500;
+      }
+
+      .linux-download-option-hint {
+        color: var(--text-muted);
+        font-size: 0.8125rem;
+      }
+
       .code-block {
         display: block;
         padding: 0.875rem 1rem;
@@ -975,6 +1097,21 @@
         overflow-x: auto;
         white-space: pre-wrap;
         word-break: break-all;
+        min-height: 5.25rem;
+      }
+
+      .platform-card .code-block {
+        cursor: pointer;
+        transition: border-color 0.2s ease, color 0.2s ease;
+      }
+
+      .platform-card .code-block:hover {
+        border-color: var(--border-hover);
+      }
+
+      .platform-card .code-block.is-copied {
+        color: #86efac;
+        text-align: center;
       }
 
       /* CTA banner */
@@ -1705,8 +1842,8 @@
           <div class="section-header reveal">
             <h2>Install for your platform</h2>
             <p>
-              One-command installers for macOS and Linux, MSI/EXE for Windows, or
-              build from source if you prefer full control.
+              One-command install scripts for each platform, or download the
+              installer from GitHub Releases.
             </p>
           </div>
           <div class="platform-grid">
@@ -1716,15 +1853,23 @@
                 <h3>macOS</h3>
               </header>
               <p>
-                Quick install via script, or install with Homebrew from the
-                official tap.
+                Run the install script below, or download the DMG installer from
+                GitHub Releases.
               </p>
               <code class="code-block"
-                >bash &lt;(curl -fsSL https://raw.githubusercontent.com/Nexo-Agent/nexo/refs/heads/main/installer.sh)</code
+                >bash &lt;(curl -fsSL https://nexo.nkthanh.dev/installer.sh)</code
               >
-              <p style="margin-top: 1rem; margin-bottom: 0; font-size: 0.875rem; color: var(--text-muted)">
-                Homebrew: <code style="color: var(--accent-bright)">brew install --cask nexo</code>
-              </p>
+              <div class="platform-download">
+                <a
+                  class="btn btn-ghost"
+                  data-platform-download="macos"
+                  href="https://github.com/Nexo-Agent/nexo/releases/latest"
+                  rel="noopener noreferrer"
+                >
+                  <i data-lucide="download"></i>
+                  Download macOS installer
+                </a>
+              </div>
             </article>
             <article class="glass-card platform-card reveal reveal-delay-1">
               <header>
@@ -1732,18 +1877,23 @@
                 <h3>Windows</h3>
               </header>
               <p>
-                Download the MSI or EXE installer from GitHub Releases, or use
-                the PowerShell installer for scripted setup.
+                Run the install script below, or download the MSI or EXE
+                installer from GitHub Releases.
               </p>
-              <a
-                class="btn btn-ghost"
-                href="https://github.com/Nexo-Agent/nexo/releases/latest"
-                target="_blank"
-                rel="noopener noreferrer"
+              <code class="code-block"
+                >&amp; ([ScriptBlock]::Create((iwr -useb https://nexo.nkthanh.dev/installer-windows.ps1)))</code
               >
-                <i data-lucide="download"></i>
-                Windows installers
-              </a>
+              <div class="platform-download">
+                <a
+                  class="btn btn-ghost"
+                  data-platform-download="windows"
+                  href="https://github.com/Nexo-Agent/nexo/releases/latest"
+                  rel="noopener noreferrer"
+                >
+                  <i data-lucide="download"></i>
+                  Download Windows installer
+                </a>
+              </div>
             </article>
             <article class="glass-card platform-card reveal reveal-delay-2">
               <header>
@@ -1751,12 +1901,62 @@
                 <h3>Linux</h3>
               </header>
               <p>
-                Use the installer script for Debian or RPM packages, or grab an
-                AppImage from Releases.
+                Run the install script below, or choose a Debian, RPM, or
+                AppImage package from GitHub Releases.
               </p>
               <code class="code-block"
-                >bash &lt;(curl -fsSL https://raw.githubusercontent.com/Nexo-Agent/nexo/refs/heads/main/installer.sh)</code
+                >bash &lt;(curl -fsSL https://nexo.nkthanh.dev/installer.sh)</code
               >
+              <div class="platform-download linux-download" data-linux-download>
+                <button
+                  type="button"
+                  class="btn btn-ghost linux-download-toggle"
+                  aria-expanded="false"
+                  aria-haspopup="menu"
+                >
+                  <i data-lucide="download"></i>
+                  Download Linux installer
+                  <i data-lucide="chevron-down"></i>
+                </button>
+                <div class="linux-download-menu" role="menu" hidden>
+                  <button
+                    type="button"
+                    class="linux-download-option"
+                    data-linux-format="deb"
+                    role="menuitem"
+                    disabled
+                  >
+                    <span class="linux-download-option-label">.deb</span>
+                    <span class="linux-download-option-hint"
+                      >Debian, Ubuntu, and derivatives</span
+                    >
+                  </button>
+                  <button
+                    type="button"
+                    class="linux-download-option"
+                    data-linux-format="rpm"
+                    role="menuitem"
+                    disabled
+                  >
+                    <span class="linux-download-option-label">.rpm</span>
+                    <span class="linux-download-option-hint"
+                      >Fedora, RHEL, and derivatives</span
+                    >
+                  </button>
+                  <button
+                    type="button"
+                    class="linux-download-option"
+                    data-linux-format="appimage"
+                    role="menuitem"
+                    disabled
+                  >
+                    <span class="linux-download-option-label">AppImage</span>
+                    <span class="linux-download-option-hint"
+                      >Universal, no install required</span
+                    >
+                  </button>
+                </div>
+              </div>
             </article>
           </div>
         </div>
@@ -1845,6 +2045,224 @@
           }
         });
       });
+
+      const copyResetTimers = new WeakMap();
+
+      async function copyText(text) {
+        if (navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return;
+          } catch {
+            // Fall back to execCommand below.
+          }
+        }
+
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        try {
+          const copied = document.execCommand('copy');
+          if (!copied) {
+            throw new Error('Copy command failed');
+          }
+        } finally {
+          textarea.remove();
+        }
+      }
+
+      function showCopiedState(block, script) {
+        block.textContent = 'Copied to clipboard';
+        block.classList.add('is-copied');
+
+        clearTimeout(copyResetTimers.get(block));
+        const timer = setTimeout(() => {
+          block.textContent = script;
+          block.classList.remove('is-copied');
+          copyResetTimers.delete(block);
+        }, 1000);
+        copyResetTimers.set(block, timer);
+      }
+
+      document.querySelectorAll('.platform-card .code-block').forEach((block) => {
+        const script = block.textContent.trim();
+        block.setAttribute('role', 'button');
+        block.setAttribute('tabindex', '0');
+        block.setAttribute('aria-label', 'Copy install script');
+
+        block.addEventListener('click', async () => {
+          if (block.classList.contains('is-copied')) return;
+
+          try {
+            await copyText(script);
+            showCopiedState(block, script);
+          } catch {
+            block.textContent = 'Could not copy — click to try again';
+            block.classList.add('is-copied');
+            clearTimeout(copyResetTimers.get(block));
+            const timer = setTimeout(() => {
+              block.textContent = script;
+              block.classList.remove('is-copied');
+              copyResetTimers.delete(block);
+            }, 5000);
+            copyResetTimers.set(block, timer);
+          }
+        });
+
+        block.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            block.click();
+          }
+        });
+      });
+
+      async function loadPlatformDownloadLinks() {
+        const buttons = document.querySelectorAll('[data-platform-download]');
+        const linuxDownload = document.querySelector('[data-linux-download]');
+        if (!buttons.length && !linuxDownload) return;
+
+        const resolveAssetLinks = (release) => {
+          const version = release.tag_name;
+          const assets = release.assets || [];
+          const assetByName = new Map(
+            assets.map((asset) => [asset.name, asset.browser_download_url])
+          );
+
+          const pickAsset = (...names) => {
+            for (const name of names) {
+              const url = assetByName.get(name);
+              if (url) return { url, name };
+            }
+            return null;
+          };
+
+          const pickAssetByPattern = (pattern) => {
+            const asset = assets.find(
+              (item) => pattern.test(item.name) && !item.name.endsWith('.sig')
+            );
+            return asset
+              ? { url: asset.browser_download_url, name: asset.name }
+              : null;
+          };
+
+          const isAppleSilicon =
+            navigator.userAgent.includes('ARM64') ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+          return {
+            macos:
+              pickAsset(
+                `Nexo_${version}_${isAppleSilicon ? 'aarch64' : 'x64'}.dmg`,
+                `Nexo_${version}_x64.dmg`,
+                `Nexo_${version}_aarch64.dmg`
+              ) || pickAssetByPattern(/Nexo_.*\.dmg$/),
+            windows:
+              pickAsset(
+                `Nexo_${version}_x64_en-US.msi`,
+                `Nexo_${version}_x64-setup.exe`
+              ) ||
+              pickAssetByPattern(/Nexo_.*_x64_en-US\.msi$/) ||
+              pickAssetByPattern(/Nexo_.*_x64-setup\.exe$/),
+            linux: {
+              deb:
+                pickAsset(`Nexo_${version}_amd64.deb`) ||
+                pickAssetByPattern(/Nexo_.*_amd64\.deb$/),
+              rpm:
+                pickAsset(`Nexo-${version}-1.x86_64.rpm`) ||
+                pickAssetByPattern(/Nexo-.*\.x86_64\.rpm$/),
+              appimage:
+                pickAsset(`Nexo_${version}_amd64.AppImage`) ||
+                pickAssetByPattern(/Nexo_.*_amd64\.AppImage$/),
+            },
+          };
+        };
+
+        const triggerDownload = (url) => {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        };
+
+        const setupLinuxDownloadMenu = (linuxAssets) => {
+          if (!linuxDownload) return;
+
+          const toggle = linuxDownload.querySelector('.linux-download-toggle');
+          const menu = linuxDownload.querySelector('.linux-download-menu');
+          const options = linuxDownload.querySelectorAll('[data-linux-format]');
+
+          const closeMenu = () => {
+            linuxDownload.classList.remove('is-open');
+            toggle.setAttribute('aria-expanded', 'false');
+            menu.hidden = true;
+          };
+
+          options.forEach((option) => {
+            const asset = linuxAssets[option.dataset.linuxFormat];
+            if (!asset) return;
+
+            option.disabled = false;
+            option.setAttribute('aria-label', `Download ${asset.name}`);
+            option.addEventListener('click', () => {
+              triggerDownload(asset.url);
+              closeMenu();
+            });
+          });
+
+          toggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const isOpen = linuxDownload.classList.toggle('is-open');
+            toggle.setAttribute('aria-expanded', String(isOpen));
+            menu.hidden = !isOpen;
+            if (isOpen) lucide.createIcons();
+          });
+
+          document.addEventListener('click', (event) => {
+            if (!linuxDownload.contains(event.target)) {
+              closeMenu();
+            }
+          });
+
+          document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+              closeMenu();
+            }
+          });
+        };
+
+        try {
+          const response = await fetch(
+            'https://api.github.com/repos/Nexo-Agent/nexo/releases?per_page=1',
+            { headers: { Accept: 'application/vnd.github+json' } }
+          );
+          if (!response.ok) return;
+
+          const [release] = await response.json();
+          const platformAssets = resolveAssetLinks(release);
+
+          buttons.forEach((button) => {
+            const asset = platformAssets[button.dataset.platformDownload];
+            if (!asset) return;
+
+            button.href = asset.url;
+            button.setAttribute('aria-label', `Download ${asset.name}`);
+            button.addEventListener('click', (event) => {
+              event.preventDefault();
+              triggerDownload(asset.url);
+            });
+          });
+
+          setupLinuxDownloadMenu(platformAssets.linux);
+        } catch {
+          // Keep fallback links to GitHub Releases.
+        }
+      }
+
+      loadPlatformDownloadLinks();
     </script>
   </body>
 </html>

@@ -3,8 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import type { Artifact } from '../../types';
 import { MarkdownArtifactViewer } from './MarkdownArtifactViewer';
 
-import { readArtifactTextFile } from '@/features/artifacts/lib/readArtifactText';
-
 const readArtifactTextFileMock = vi.fn();
 
 vi.mock('@/features/artifacts/lib/readArtifactText', () => ({
