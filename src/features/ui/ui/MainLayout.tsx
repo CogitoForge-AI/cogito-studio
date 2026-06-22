@@ -1,3 +1,4 @@
+import { Suspense, lazy, useEffect, useState } from 'react';
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -7,9 +8,6 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/ui/atoms/button/button';
-import { About } from '@/features/settings';
-import { ChatSearchDialog } from '@/features/chat/ui/ChatSearchDialog';
-import { ChatRightPanel } from '@/features/chat/ui/ChatRightPanel';
 import { KeyboardShortcutsDialog } from '@/features/shortcuts/ui/KeyboardShortcutsDialog';
 import { TitleBar } from '@/features/ui/ui/TitleBar';
 import { ResizableRightPanel } from '@/features/ui/ui/ResizableRightPanel';
@@ -28,8 +26,48 @@ import {
 
 // Screens
 import { ChatScreen } from '@/features/chat/ui/ChatScreen';
-import { SettingsScreen } from '@/features/settings/ui/SettingsScreen';
-import { WorkspaceSettingsDialog } from '@/features/workspace';
+
+const About = lazy(() =>
+  import('@/features/settings/ui/About').then((module) => ({
+    default: module.About,
+  }))
+);
+const ChatSearchDialog = lazy(() =>
+  import('@/features/chat/ui/ChatSearchDialog').then((module) => ({
+    default: module.ChatSearchDialog,
+  }))
+);
+const ChatRightPanel = lazy(() =>
+  import('@/features/chat/ui/ChatRightPanel').then((module) => ({
+    default: module.ChatRightPanel,
+  }))
+);
+const SettingsScreen = lazy(() =>
+  import('@/features/settings/ui/SettingsScreen').then((module) => ({
+    default: module.SettingsScreen,
+  }))
+);
+const WorkspaceSettingsDialog = lazy(() =>
+  import('@/features/workspace/ui/WorkspaceSettingsDialog').then((module) => ({
+    default: module.WorkspaceSettingsDialog,
+  }))
+);
+
+function useHasBeenEnabled(enabled: boolean) {
+  const [hasBeenEnabled, setHasBeenEnabled] = useState(enabled);
+
+  useEffect(() => {
+    if (!enabled || hasBeenEnabled) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setHasBeenEnabled(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [enabled, hasBeenEnabled]);
+
+  return enabled || hasBeenEnabled;
+}
 
 export function MainLayout() {
   const { t } = useTranslation(['common', 'settings']);
@@ -45,10 +83,19 @@ export function MainLayout() {
   const workspaceSettingsOpen = useAppSelector(
     (state) => state.ui.workspaceSettingsOpen
   );
+  const chatSearchOpen = useAppSelector((state) => state.chatSearch.searchOpen);
   const sidebarWidth = useSidebarWidth();
   const rightPanelWidth = useRightPanelWidth();
   const isChatSidebarCollapsed = activePage === 'chat' && isSidebarCollapsed;
   const sidebarZoneWidth = isChatSidebarCollapsed ? undefined : sidebarWidth;
+  const isWorkspaceSettingsVisible =
+    workspaceSettingsOpen || activePage === 'workspaceSettings';
+  const hasOpenedAbout = useHasBeenEnabled(aboutOpen);
+  const hasOpenedWorkspaceSettings = useHasBeenEnabled(
+    isWorkspaceSettingsVisible
+  );
+  const hasOpenedChatSearch = useHasBeenEnabled(chatSearchOpen);
+  const hasOpenedRightPanel = useHasBeenEnabled(isRightPanelOpen);
 
   return (
     <div className="flex h-screen flex-col bg-background select-none">
@@ -118,31 +165,51 @@ export function MainLayout() {
       <div className="flex flex-1 overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           {activePage === 'chat' && <ChatScreen />}
-          {activePage === 'settings' && <SettingsScreen />}
+          {activePage === 'settings' && (
+            <Suspense fallback={null}>
+              <SettingsScreen />
+            </Suspense>
+          )}
         </div>
         <ResizableRightPanel>
-          <ChatRightPanel />
+          {hasOpenedRightPanel && (
+            <Suspense fallback={null}>
+              <ChatRightPanel />
+            </Suspense>
+          )}
         </ResizableRightPanel>
       </div>
 
       {/* About Dialog */}
-      <About
-        open={aboutOpen}
-        onOpenChange={(open) => dispatch(setAboutOpen(open))}
-      />
+      {hasOpenedAbout && (
+        <Suspense fallback={null}>
+          <About
+            open={aboutOpen}
+            onOpenChange={(open) => dispatch(setAboutOpen(open))}
+          />
+        </Suspense>
+      )}
 
-      <WorkspaceSettingsDialog
-        open={workspaceSettingsOpen || activePage === 'workspaceSettings'}
-        onOpenChange={(open) => {
-          dispatch(setWorkspaceSettingsOpen(open));
-          if (!open && activePage === 'workspaceSettings') {
-            dispatch(navigateToChat());
-          }
-        }}
-      />
+      {hasOpenedWorkspaceSettings && (
+        <Suspense fallback={null}>
+          <WorkspaceSettingsDialog
+            open={isWorkspaceSettingsVisible}
+            onOpenChange={(open) => {
+              dispatch(setWorkspaceSettingsOpen(open));
+              if (!open && activePage === 'workspaceSettings') {
+                dispatch(navigateToChat());
+              }
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* Chat Search Dialog */}
-      <ChatSearchDialog />
+      {hasOpenedChatSearch && (
+        <Suspense fallback={null}>
+          <ChatSearchDialog />
+        </Suspense>
+      )}
 
       {/* Keyboard Shortcuts Dialog */}
       <KeyboardShortcutsDialog />

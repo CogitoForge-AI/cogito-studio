@@ -1,15 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { mcpConnectionsReducer } from '@/features/mcp';
-import {
-  workspacesReducer,
-  workspaceSettingsReducer,
-} from '@/features/workspace';
-import {
-  chatsReducer,
-  messagesReducer,
-  chatInputReducer,
-  chatSearchReducer,
-} from '@/features/chat';
+import workspacesReducer from '@/features/workspace/state/workspacesSlice';
+import workspaceSettingsReducer from '@/features/workspace/state/workspaceSettingsSlice';
+import chatsReducer from '@/features/chat/state/chatsSlice';
+import messagesReducer from '@/features/chat/state/messages';
+import chatInputReducer from '@/features/chat/state/chatInputSlice';
+import chatSearchReducer from '@/features/chat/state/chatSearchSlice';
 import uiReducer from '@/features/ui/state/uiSlice';
 import notificationReducer from '@/features/notifications/state/notificationSlice';
 import toolPermissionReducer from '@/features/tools/state/toolPermissionSlice';
