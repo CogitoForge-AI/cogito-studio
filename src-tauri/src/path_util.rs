@@ -83,8 +83,18 @@ mod tests {
 
     #[test]
     fn prepends_directory_to_path_env() {
-        let env = prepend_path_dir(HashMap::new(), Path::new("/sandbox/bin"));
+        let mut env = HashMap::new();
+        env.insert("PATH".to_string(), "/usr/bin".to_string());
+        let env = prepend_path_dir(env, Path::new("/sandbox/bin"));
         #[cfg(unix)]
-        assert_eq!(env.get("PATH").map(String::as_str), Some("/sandbox/bin"));
+        assert_eq!(
+            env.get("PATH").map(String::as_str),
+            Some("/sandbox/bin:/usr/bin")
+        );
+        #[cfg(windows)]
+        assert_eq!(
+            env.get("PATH").map(String::as_str),
+            Some(r"/sandbox/bin;/usr/bin")
+        );
     }
 }

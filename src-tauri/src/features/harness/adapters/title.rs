@@ -6,7 +6,7 @@ use crate::features::llm_connection::LLMConnectionService;
 use crate::features::message::models::Message;
 use crate::features::message::MessageService;
 use crate::features::workspace::settings::WorkspaceSettingsService;
-use crate::models::llm_types::{ChatMessage, LLMChatRequest, LLMChatResponse, UserContent};
+use crate::models::llm_types::{ChatMessage, LlmChatParams, LLMChatResponse, UserContent};
 use std::sync::Arc;
 use tauri::AppHandle;
 
@@ -141,9 +141,9 @@ impl TitleGenerator {
             },
         ];
 
-        let request = LLMChatRequest {
-            model: model.clone(),
-            messages,
+        let request = LlmChatParams {
+            model: &model,
+            messages: &messages,
             temperature: Some(0.3),
             // Reasoning models can spend most of a small budget on thinking tokens.
             max_tokens: Some(256),

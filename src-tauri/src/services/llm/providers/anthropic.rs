@@ -4,7 +4,7 @@ use crate::events::{
     MessageEmitter, TokenUsage as EventTokenUsage, ToolCall as EventToolCall, ToolEmitter,
 };
 use crate::models::llm_types::{
-    detect_model_capabilities, AssistantContent, ChatMessage, ContentPart, LLMChatRequest,
+    detect_model_capabilities, AssistantContent, ChatMessage, ContentPart, LlmChatParams,
     LLMChatResponse, LLMModel, TokenUsage, ToolCall, ToolCallFunction, ToolChoice, UserContent,
 };
 use async_trait::async_trait;
@@ -231,9 +231,9 @@ impl AnthropicProvider {
                                     if let Some(text) = delta.get("text").and_then(|s| s.as_str()) {
                                         full_content.push_str(text);
                                         message_emitter.emit_message_chunk(
-                                            chat_id.clone(),
-                                            message_id.clone(),
-                                            text.to_string(),
+                                            &chat_id,
+                                            &message_id,
+                                            text,
                                         )?;
                                     }
                                 } else if delta_type == "input_json_delta" {
@@ -248,9 +248,9 @@ impl AnthropicProvider {
                                     {
                                         full_thinking.push_str(thinking);
                                         message_emitter.emit_thinking_chunk(
-                                            chat_id.clone(),
-                                            message_id.clone(),
-                                            thinking.to_string(),
+                                            &chat_id,
+                                            &message_id,
+                                            thinking,
                                         )?;
                                     }
                                 }
@@ -324,9 +324,9 @@ impl AnthropicProvider {
         }
 
         message_emitter.emit_message_complete(
-            chat_id,
-            message_id,
-            full_content.clone(),
+            &chat_id,
+            &message_id,
+            &full_content,
             Some(EventTokenUsage {
                 prompt_tokens: Some(input_tokens),
                 completion_tokens: Some(output_tokens),
@@ -436,9 +436,9 @@ impl AnthropicProvider {
 
         let message_emitter = MessageEmitter::new(app.clone());
         message_emitter.emit_message_complete(
-            chat_id.clone(),
-            message_id.clone(),
-            content_str.clone(),
+            &chat_id,
+            &message_id,
+            &content_str,
             Some(EventTokenUsage {
                 prompt_tokens: Some(json_response.usage.input_tokens),
                 completion_tokens: Some(json_response.usage.output_tokens),
@@ -528,7 +528,7 @@ impl LLMProvider for AnthropicProvider {
         &self,
         base_url: &str,
         api_key: Option<&str>,
-        request: LLMChatRequest,
+        request: LlmChatParams<'_>,
         chat_id: String,
         message_id: String,
         app: AppHandle,
@@ -556,7 +556,7 @@ impl LLMProvider for AnthropicProvider {
                     if let Some(existing) = system_prompt {
                         system_prompt = Some(format!("{existing}\n\n{content}"));
                     } else {
-                        system_prompt = Some(content);
+                        system_prompt = Some(content.clone());
                     }
                 }
                 ChatMessage::User { content } => {
@@ -564,7 +564,7 @@ impl LLMProvider for AnthropicProvider {
                         UserContent::Text(text) => {
                             messages.push(AnthropicMessage {
                                 role: "user".to_string(),
-                                content: AnthropicMessageContent::Text(text),
+                                content: AnthropicMessageContent::Text(text.clone()),
                             });
                         }
                         UserContent::Parts(parts) => {
@@ -572,7 +572,9 @@ impl LLMProvider for AnthropicProvider {
                             for part in parts {
                                 match part {
                                     ContentPart::Text { text } => {
-                                        blocks.push(AnthropicContentBlock::Text { text });
+                                        blocks.push(AnthropicContentBlock::Text {
+                                            text: text.clone(),
+                                        });
                                     }
                                     ContentPart::FileUrl { file_url } => {
                                         // Anthropic only supports images
@@ -630,13 +632,12 @@ impl LLMProvider for AnthropicProvider {
                                         }
                                     }
                                     ContentPart::InlineData { inline_data } => {
-                                        // Handle inline data (e.g., from Google's image generation)
                                         if inline_data.mime_type.starts_with("image/") {
                                             blocks.push(AnthropicContentBlock::Image {
                                                 source: AnthropicImageSource {
                                                     r#type: "base64".to_string(),
-                                                    media_type: inline_data.mime_type,
-                                                    data: inline_data.data,
+                                                    media_type: inline_data.mime_type.clone(),
+                                                    data: inline_data.data.clone(),
                                                 },
                                             });
                                         } else {
@@ -667,25 +668,28 @@ impl LLMProvider for AnthropicProvider {
                     match content {
                         AssistantContent::Text(text) => {
                             if !text.is_empty() {
-                                blocks.push(AnthropicContentBlock::Text { text });
+                                blocks.push(AnthropicContentBlock::Text {
+                                    text: text.clone(),
+                                });
                             }
                         }
                         AssistantContent::Parts(parts) => {
                             for part in parts {
                                 if let ContentPart::Text { text } = part {
-                                    blocks.push(AnthropicContentBlock::Text { text });
+                                    blocks.push(AnthropicContentBlock::Text {
+                                        text: text.clone(),
+                                    });
                                 }
                             }
                         }
                     }
                     if let Some(tcs) = tool_calls {
                         for tc in tcs {
-                            // Assuming tc.function.arguments is raw JSON string, we need Value.
                             let input_val: Value = serde_json::from_str(&tc.function.arguments)
                                 .unwrap_or(serde_json::json!({}));
                             blocks.push(AnthropicContentBlock::ToolUse {
-                                id: tc.id,
-                                name: tc.function.name,
+                                id: tc.id.clone(),
+                                name: tc.function.name.clone(),
                                 input: input_val,
                             });
                         }
@@ -704,8 +708,8 @@ impl LLMProvider for AnthropicProvider {
                         role: "user".to_string(), // Tool results are role "user"
                         content: AnthropicMessageContent::Blocks(vec![
                             AnthropicContentBlock::ToolResult {
-                                tool_use_id: tool_call_id,
-                                content,
+                                tool_use_id: tool_call_id.clone(),
+                                content: content.clone(),
                             },
                         ]),
                     });
@@ -716,13 +720,14 @@ impl LLMProvider for AnthropicProvider {
         // Handle Tools
         let tools = request.tools.map(|req_tools| {
             req_tools
-                .into_iter()
+                .iter()
                 .map(|t| AnthropicTool {
-                    name: t.function.name,
-                    description: t.function.description,
+                    name: t.function.name.clone(),
+                    description: t.function.description.clone(),
                     input_schema: t
                         .function
                         .parameters
+                        .clone()
                         .unwrap_or(serde_json::json!({"type": "object", "properties": {}})),
                 })
                 .collect()
@@ -734,7 +739,7 @@ impl LLMProvider for AnthropicProvider {
                 ToolChoice::String(s) if s == "auto" => Some(AnthropicToolChoice::Auto),
                 ToolChoice::String(s) if s == "any" => Some(AnthropicToolChoice::Any),
                 ToolChoice::Object { function, .. } => Some(AnthropicToolChoice::Tool {
-                    name: function.name,
+                    name: function.name.clone(),
                 }),
                 _ => None,
             }
@@ -761,7 +766,7 @@ impl LLMProvider for AnthropicProvider {
         };
 
         let anthropic_request = AnthropicRequest {
-            model: request.model,
+            model: request.model.to_string(),
             messages,
             max_tokens,
             stream: request.stream,

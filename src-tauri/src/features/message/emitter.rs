@@ -61,20 +61,20 @@ impl MessageEmitter {
 
     pub fn emit_message_chunk(
         &self,
-        chat_id: String,
-        message_id: String,
-        chunk: String,
+        chat_id: &str,
+        message_id: &str,
+        chunk: &str,
     ) -> Result<(), AppError> {
-        self.persist_content_chunk(&message_id, &chunk);
-        let turn_id = self.resolve_turn_id(&chat_id);
+        self.persist_content_chunk(message_id, chunk);
+        let turn_id = self.resolve_turn_id(chat_id);
         self.app
             .emit(
                 TauriEvents::MESSAGE_CHUNK,
                 MessageChunkEvent {
-                    chat_id,
+                    chat_id: chat_id.to_string(),
                     turn_id,
-                    message_id,
-                    chunk,
+                    message_id: message_id.to_string(),
+                    chunk: chunk.to_string(),
                 },
             )
             .map_err(|e| AppError::Generic(format!("Failed to emit message-chunk event: {e}")))
@@ -82,20 +82,20 @@ impl MessageEmitter {
 
     pub fn emit_thinking_chunk(
         &self,
-        chat_id: String,
-        message_id: String,
-        chunk: String,
+        chat_id: &str,
+        message_id: &str,
+        chunk: &str,
     ) -> Result<(), AppError> {
-        self.persist_reasoning_chunk(&message_id, &chunk);
-        let turn_id = self.resolve_turn_id(&chat_id);
+        self.persist_reasoning_chunk(message_id, chunk);
+        let turn_id = self.resolve_turn_id(chat_id);
         self.app
             .emit(
                 TauriEvents::THINKING_CHUNK,
                 ThinkingChunkEvent {
-                    chat_id,
+                    chat_id: chat_id.to_string(),
                     turn_id,
-                    message_id,
-                    chunk,
+                    message_id: message_id.to_string(),
+                    chunk: chunk.to_string(),
                 },
             )
             .map_err(|e| AppError::Generic(format!("Failed to emit thinking-chunk event: {e}")))
@@ -103,25 +103,25 @@ impl MessageEmitter {
 
     pub fn emit_message_complete(
         &self,
-        chat_id: String,
-        message_id: String,
-        content: String,
+        chat_id: &str,
+        message_id: &str,
+        content: &str,
         token_usage: Option<crate::events::TokenUsage>,
     ) -> Result<(), AppError> {
         if let Some(state) = self.app.try_state::<AppState>() {
-            state.stream_persist.flush_message(&message_id);
+            state.stream_persist.flush_message(message_id);
         }
 
-        let turn_id = self.resolve_turn_id(&chat_id);
+        let turn_id = self.resolve_turn_id(chat_id);
 
         if let (Some(turn_id), Some(_state)) = (turn_id.clone(), self.app.try_state::<AppState>()) {
             let _ =
                 crate::features::conversation::emitter::ConversationEmitter::new(self.app.clone())
                     .emit_llm_call_complete(
-                        chat_id,
+                        chat_id.to_string(),
                         turn_id,
-                        message_id,
-                        content,
+                        message_id.to_string(),
+                        content.to_string(),
                         token_usage,
                     );
             return Ok(());
@@ -131,10 +131,10 @@ impl MessageEmitter {
             .emit(
                 TauriEvents::MESSAGE_COMPLETE,
                 MessageCompleteEvent {
-                    chat_id,
+                    chat_id: chat_id.to_string(),
                     turn_id,
-                    message_id,
-                    content,
+                    message_id: message_id.to_string(),
+                    content: content.to_string(),
                     token_usage,
                 },
             )

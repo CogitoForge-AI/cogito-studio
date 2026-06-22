@@ -7,7 +7,7 @@ use crate::features::tool::core::{
     parse_tool_arguments, ToolExecutionContext, ToolInteraction, ToolRuntime,
 };
 use crate::models::llm_types::{
-    AssistantContent, ChatMessage, LLMChatRequest, LLMChatResponse, UserContent,
+    AssistantContent, ChatMessage, LlmChatParams, LLMChatResponse, UserContent,
 };
 use std::sync::Arc;
 use tauri::AppHandle;
@@ -63,6 +63,10 @@ impl ConversationTurnController {
         let _ = self.intent_router.needs_tools("", tools.is_some());
         self.loop_detector.reset();
 
+        let stream_options = serde_json::json!({
+            "include_usage": true
+        });
+
         for iteration in 0..=max_iterations {
             let is_last_iteration = iteration == max_iterations;
 
@@ -94,23 +98,19 @@ impl ConversationTurnController {
                 let llm_tools = if is_last_iteration {
                     None
                 } else {
-                    tools.clone()
+                    tools.as_deref()
                 };
 
-                let model_for_usage = model.clone();
-
-                let llm_request = LLMChatRequest {
-                    model: model.clone(),
-                    messages: current_messages.clone(),
+                let llm_params = LlmChatParams {
+                    model: &model,
+                    messages: &current_messages,
                     temperature: Some(0.7),
                     max_tokens: None,
                     stream: stream_enabled,
                     tools: llm_tools,
                     tool_choice: None,
-                    reasoning_effort: reasoning_effort.clone(),
-                    stream_options: Some(serde_json::json!({
-                        "include_usage": true
-                    })),
+                    reasoning_effort: reasoning_effort.as_deref(),
+                    stream_options: Some(&stream_options),
                     response_modalities: None,
                     image_config: None,
                 };
@@ -120,7 +120,7 @@ impl ConversationTurnController {
                     .chat(
                         &llm_connection.base_url,
                         Some(&llm_connection.api_key),
-                        llm_request,
+                        llm_params,
                         &chat_id,
                         &assistant_message_id,
                         app.clone(),
@@ -145,7 +145,7 @@ impl ConversationTurnController {
                     &chat_id,
                     &assistant_message_id,
                     &llm_connection.provider,
-                    &model_for_usage,
+                    &model,
                     resp.usage.as_ref(),
                     latency,
                     stream_enabled,

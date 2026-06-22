@@ -2,7 +2,7 @@ use super::LLMProvider;
 use crate::error::AppError;
 use crate::events::{MessageEmitter, TokenUsage as EventTokenUsage, ToolEmitter};
 use crate::models::llm_types::{
-    apply_input_modalities, detect_model_capabilities, LLMChatRequest, LLMChatResponse, LLMModel,
+    apply_input_modalities, detect_model_capabilities, LlmChatParams, LLMChatResponse, LLMModel,
     SSEChunk, TokenUsage, ToolCall, ToolCallFunction,
 };
 use async_trait::async_trait;
@@ -103,20 +103,18 @@ impl OpenAICompatProvider {
                                         if let Some(ref content) = delta.content {
                                             full_content.push_str(content);
 
-                                            // Emit chunk event
                                             message_emitter.emit_message_chunk(
-                                                chat_id.clone(),
-                                                message_id.clone(),
-                                                content.clone(),
+                                                &chat_id,
+                                                &message_id,
+                                                content,
                                             )?;
                                         }
 
-                                        // Handle reasoning/thinking content
-                                        if let Some(reasoning) = delta.get_reasoning() {
-                                            full_reasoning.push_str(&reasoning);
+                                        if let Some(reasoning) = delta.reasoning_text() {
+                                            full_reasoning.push_str(reasoning);
                                             message_emitter.emit_thinking_chunk(
-                                                chat_id.clone(),
-                                                message_id.clone(),
+                                                &chat_id,
+                                                &message_id,
                                                 reasoning,
                                             )?;
                                         }
@@ -233,9 +231,9 @@ impl OpenAICompatProvider {
         // Emit complete event
         // SSE doesn't provide usage in chunks, would need final chunk
         message_emitter.emit_message_complete(
-            chat_id.clone(),
-            message_id.clone(),
-            full_content.clone(),
+            &chat_id,
+            &message_id,
+            &full_content,
             final_usage.as_ref().map(|u| EventTokenUsage {
                 prompt_tokens: u.prompt_tokens,
                 completion_tokens: u.completion_tokens,
@@ -408,9 +406,9 @@ impl OpenAICompatProvider {
 
         // Emit complete event
         message_emitter.emit_message_complete(
-            chat_id.clone(),
-            message_id.clone(),
-            content.clone(),
+            &chat_id,
+            &message_id,
+            &content,
             usage.as_ref().map(|u| EventTokenUsage {
                 prompt_tokens: u.prompt_tokens,
                 completion_tokens: u.completion_tokens,
@@ -569,7 +567,7 @@ impl LLMProvider for OpenAICompatProvider {
         &self,
         base_url: &str,
         api_key: Option<&str>,
-        request: LLMChatRequest,
+        request: LlmChatParams<'_>,
         chat_id: String,
         message_id: String,
         app: AppHandle,

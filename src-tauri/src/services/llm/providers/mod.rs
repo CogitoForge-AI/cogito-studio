@@ -4,7 +4,7 @@ pub mod openai;
 pub mod openai_compat;
 
 use crate::error::AppError;
-use crate::models::llm_types::{LLMChatRequest, LLMChatResponse, LLMModel};
+use crate::models::llm_types::{LlmChatParams, LLMChatResponse, LLMModel};
 use async_trait::async_trait;
 use tauri::AppHandle;
 
@@ -25,7 +25,7 @@ pub trait LLMProvider: Send + Sync {
         &self,
         base_url: &str,
         api_key: Option<&str>,
-        request: LLMChatRequest,
+        request: LlmChatParams<'_>,
         chat_id: String,
         message_id: String,
         app: AppHandle,

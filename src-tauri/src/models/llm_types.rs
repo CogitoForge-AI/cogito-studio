@@ -193,6 +193,30 @@ pub struct LLMChatRequest {
     pub image_config: Option<ImageConfig>,
 }
 
+/// Borrowed LLM chat parameters — avoids cloning message/tool vectors at call sites.
+#[derive(Debug, Serialize)]
+pub struct LlmChatParams<'a> {
+    pub model: &'a str,
+    pub messages: &'a [ChatMessage],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_tokens: Option<u32>,
+    pub stream: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tools: Option<&'a [ChatCompletionTool]>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_choice: Option<&'a ToolChoice>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning_effort: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stream_options: Option<&'a serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub response_modalities: Option<&'a [String]>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_config: Option<&'a ImageConfig>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ImageConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -254,11 +278,15 @@ pub struct SSEDelta {
 }
 
 impl SSEDelta {
-    pub fn get_reasoning(&self) -> Option<String> {
+    pub fn reasoning_text(&self) -> Option<&str> {
         self.reasoning_content
-            .clone()
-            .or(self.reasoning.clone())
-            .or(self.thinking.clone())
+            .as_deref()
+            .or_else(|| self.reasoning.as_deref())
+            .or_else(|| self.thinking.as_deref())
+    }
+
+    pub fn get_reasoning(&self) -> Option<String> {
+        self.reasoning_text().map(str::to_string)
     }
 }
 

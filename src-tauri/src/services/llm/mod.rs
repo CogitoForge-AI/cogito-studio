@@ -2,7 +2,7 @@ pub mod cancel;
 pub mod providers;
 
 use crate::error::AppError;
-use crate::models::llm_types::{LLMChatRequest, LLMChatResponse, LLMModel};
+use crate::models::llm_types::{LlmChatParams, LLMChatResponse, LLMModel};
 use providers::{
     AnthropicProvider, GoogleProvider, LLMProvider, OpenAICompatProvider, OpenAIProvider,
 };
@@ -55,7 +55,7 @@ impl LLMService {
         &self,
         base_url: &str,
         api_key: Option<&str>,
-        request: LLMChatRequest,
+        request: LlmChatParams<'_>,
         chat_id: String,
         message_id: String,
         app: AppHandle,

@@ -1,6 +1,6 @@
 use crate::error::AppError;
 use crate::features::harness::traits::LlmClient;
-use crate::models::llm_types::{LLMChatRequest, LLMChatResponse};
+use crate::models::llm_types::{LlmChatParams, LLMChatResponse};
 use crate::services::LLMService;
 use async_trait::async_trait;
 use std::sync::Arc;
@@ -23,7 +23,7 @@ impl LlmClient for LlmServiceAdapter {
         &self,
         base_url: &str,
         api_key: Option<&str>,
-        request: LLMChatRequest,
+        request: LlmChatParams<'_>,
         chat_id: &str,
         message_id: &str,
         app: AppHandle,

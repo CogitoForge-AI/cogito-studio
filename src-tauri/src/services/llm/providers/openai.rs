@@ -2,7 +2,7 @@ use super::LLMProvider;
 use crate::error::AppError;
 use crate::events::{MessageEmitter, TokenUsage as EventTokenUsage, ToolEmitter};
 use crate::models::llm_types::{
-    AssistantContent, ChatMessage, ContentPart, LLMChatRequest, LLMChatResponse, LLMModel,
+    AssistantContent, ChatMessage, ContentPart, LlmChatParams, LLMChatResponse, LLMModel,
     TokenUsage, ToolCall, ToolCallFunction, UserContent,
 };
 use async_trait::async_trait;
@@ -22,9 +22,9 @@ impl OpenAIProvider {
     }
 
     /// Transform messages to the new generalized 'input' format for Responses API
-    fn transform_messages_to_input(messages: Vec<ChatMessage>) -> Vec<serde_json::Value> {
+    fn transform_messages_to_input(messages: &[ChatMessage]) -> Vec<serde_json::Value> {
         messages
-            .into_iter()
+            .iter()
             .map(|msg| match msg {
                 ChatMessage::User { content } => {
                     let content_arr = match content {
@@ -33,7 +33,7 @@ impl OpenAIProvider {
                             "text": text
                         })],
                         UserContent::Parts(parts) => parts
-                            .into_iter()
+                            .iter()
                             .filter_map(|part| match part {
                                 ContentPart::Text { text } => Some(json!({
                                     "type": "input_text",
@@ -83,7 +83,7 @@ impl OpenAIProvider {
                                  })]
                              }
                         },
-                        AssistantContent::Parts(parts) => parts.into_iter().filter_map(|part| {
+                        AssistantContent::Parts(parts) => parts.iter().filter_map(|part| {
                              match part {
                                  ContentPart::Text { text } => Some(json!({ "type": "output_text", "text": text })), // CORRECTED: output_text
                                  _ => None
@@ -239,9 +239,9 @@ impl OpenAIProvider {
                                     full_content.push_str(text);
                                     if is_streaming_requested {
                                         message_emitter.emit_message_chunk(
-                                            chat_id.clone(),
-                                            message_id.clone(),
-                                            text.to_string(),
+                                            &chat_id,
+                                            &message_id,
+                                            text,
                                         )?;
                                     }
                                 }
@@ -339,9 +339,9 @@ impl OpenAIProvider {
                                             full_content.push_str(content);
                                             if is_streaming_requested {
                                                 message_emitter.emit_message_chunk(
-                                                    chat_id.clone(),
-                                                    message_id.clone(),
-                                                    content.to_string(),
+                                                    &chat_id,
+                                                    &message_id,
+                                                    content,
                                                 )?;
                                             }
                                         }
@@ -385,9 +385,9 @@ impl OpenAIProvider {
         }
 
         message_emitter.emit_message_complete(
-            chat_id.clone(),
-            message_id.clone(),
-            full_content.clone(),
+            &chat_id,
+            &message_id,
+            &full_content,
             final_usage.as_ref().map(|u| EventTokenUsage {
                 prompt_tokens: u.prompt_tokens,
                 completion_tokens: u.completion_tokens,
@@ -475,7 +475,7 @@ impl LLMProvider for OpenAIProvider {
         &self,
         base_url: &str,
         api_key: Option<&str>,
-        request: LLMChatRequest,
+        request: LlmChatParams<'_>,
         chat_id: String,
         message_id: String,
         app: AppHandle,

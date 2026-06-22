@@ -3,7 +3,7 @@ use crate::error::AppError;
 use crate::events::{MessageEmitter, TokenUsage as EventTokenUsage};
 use crate::models::llm_types::{
     detect_model_capabilities, is_image_generation_model, AssistantContent, ChatMessage,
-    ContentPart, InlineData, LLMChatRequest, LLMChatResponse, LLMModel, TokenUsage, ToolCall,
+    ContentPart, InlineData, LlmChatParams, LLMChatResponse, LLMModel, TokenUsage, ToolCall,
     ToolCallFunction, UserContent,
 };
 use async_trait::async_trait;
@@ -390,17 +390,16 @@ impl GoogleProvider {
                                                     // This is thinking content
                                                     full_reasoning.push_str(text);
                                                     message_emitter.emit_thinking_chunk(
-                                                        chat_id.clone(),
-                                                        message_id.clone(),
-                                                        text.to_string(),
+                                                        &chat_id,
+                                                        &message_id,
+                                                        text,
                                                     )?;
                                                 } else {
-                                                    // This is regular content
                                                     full_content.push_str(text);
                                                     message_emitter.emit_message_chunk(
-                                                        chat_id.clone(),
-                                                        message_id.clone(),
-                                                        text.to_string(),
+                                                        &chat_id,
+                                                        &message_id,
+                                                        text,
                                                     )?;
                                                 }
                                             }
@@ -495,9 +494,9 @@ impl GoogleProvider {
 
         // Emit complete
         message_emitter.emit_message_complete(
-            chat_id.clone(),
-            message_id.clone(),
-            full_content.clone(),
+            &chat_id,
+            &message_id,
+            &full_content,
             final_usage.as_ref().map(|u| EventTokenUsage {
                 prompt_tokens: u.prompt_tokens,
                 completion_tokens: u.completion_tokens,
@@ -645,9 +644,9 @@ impl GoogleProvider {
         });
 
         message_emitter.emit_message_complete(
-            chat_id.clone(),
-            message_id.clone(),
-            full_content.clone(),
+            &chat_id,
+            &message_id,
+            &full_content,
             usage.as_ref().map(|u| EventTokenUsage {
                 prompt_tokens: u.prompt_tokens,
                 completion_tokens: u.completion_tokens,
@@ -752,27 +751,25 @@ impl LLMProvider for GoogleProvider {
         &self,
         base_url: &str,
         api_key: Option<&str>,
-        mut request: LLMChatRequest,
+        request: LlmChatParams<'_>,
         chat_id: String,
         message_id: String,
         app: AppHandle,
         cancellation_rx: Option<tokio::sync::broadcast::Receiver<()>>,
     ) -> Result<LLMChatResponse, AppError> {
         // Auto-detect and configure for image generation models
-        let is_image_gen = is_image_generation_model(&request.model);
+        let is_image_gen = is_image_generation_model(request.model);
+
+        let mut stream = request.stream;
+        let mut response_modalities: Option<Vec<String>> = request
+            .response_modalities
+            .map(|modalities| modalities.to_vec());
 
         if is_image_gen {
-            // Image generation models require specific configuration
-            // 1. Enable both TEXT and IMAGE response modalities
-            if request.response_modalities.is_none() {
-                request.response_modalities = Some(vec!["TEXT".to_string(), "IMAGE".to_string()]);
+            if response_modalities.is_none() {
+                response_modalities = Some(vec!["TEXT".to_string(), "IMAGE".to_string()]);
             }
-
-            // 2. Force non-streaming (image generation doesn't support streaming)
-            request.stream = false;
-
-            // 3. Don't set imageConfig for experimental models - they use defaults
-            // request.image_config can be None or provided by caller
+            stream = false;
         }
 
         // Map request to Google format
@@ -1026,7 +1023,7 @@ impl LLMProvider for GoogleProvider {
         }
 
         let model = request.model;
-        let action = if request.stream {
+        let action = if stream {
             "streamGenerateContent"
         } else {
             "generateContent"
@@ -1045,7 +1042,7 @@ impl LLMProvider for GoogleProvider {
         });
 
         // Add response modalities if specified (for image generation)
-        if let Some(modalities) = request.response_modalities.as_ref() {
+        if let Some(modalities) = response_modalities.as_ref() {
             if !modalities.is_empty() {
                 gen_config["responseModalities"] = json!(modalities);
             }
@@ -1078,7 +1075,7 @@ impl LLMProvider for GoogleProvider {
         let caps = detect_model_capabilities(&model);
         let supports_thinking = caps.thinking;
 
-        if let Some(effort) = request.reasoning_effort.as_ref() {
+        if let Some(effort) = request.reasoning_effort {
             if !effort.is_empty() && supports_thinking {
                 if let Some(gen_config) = body
                     .get_mut("generationConfig")
@@ -1100,7 +1097,7 @@ impl LLMProvider for GoogleProvider {
                     } else {
                         // Gemini 2.5 and other models use thinkingBudget
                         // Map effort levels to token budgets
-                        let thinking_budget = match effort.as_str() {
+                        let thinking_budget = match effort {
                             "low" => 4096,    // Minimal thinking
                             "medium" => 8192, // Balanced thinking
                             "high" => 16384,  // Deep thinking
@@ -1167,7 +1164,7 @@ impl LLMProvider for GoogleProvider {
 
         let req_builder = self.client.post(&url).json(&body);
 
-        if request.stream {
+        if stream {
             self.handle_streaming(req_builder, chat_id, message_id, app, cancellation_rx)
                 .await
         } else {

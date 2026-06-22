@@ -2,7 +2,7 @@ use crate::error::AppError;
 use crate::features::harness::types::{HarnessMessages, MessageBuildContext, PromptContext};
 use crate::features::message::Message;
 use crate::features::workspace::settings::WorkspaceSettings;
-use crate::models::llm_types::{LLMChatRequest, LLMChatResponse, ToolCall};
+use crate::models::llm_types::{LlmChatParams, LLMChatResponse, ToolCall};
 use async_trait::async_trait;
 use serde_json::Value;
 use std::sync::Arc;
@@ -95,7 +95,7 @@ pub trait LlmClient: Send + Sync {
         &self,
         base_url: &str,
         api_key: Option<&str>,
-        request: LLMChatRequest,
+        request: LlmChatParams<'_>,
         chat_id: &str,
         message_id: &str,
         app: AppHandle,
