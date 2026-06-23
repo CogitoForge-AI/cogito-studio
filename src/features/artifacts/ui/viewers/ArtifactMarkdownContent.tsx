@@ -3,6 +3,7 @@ import type { DetailedHTMLProps, HTMLAttributes } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import { Streamdown } from '@/ui/atoms/streamdown';
 import { cn } from '@/lib/utils';
+import { containsMathSyntax } from '@/lib/markdown/containsMathSyntax';
 import { CodeBlockSkeleton } from '@/ui/atoms/streamdown/lib/code-block/skeleton';
 import type { ExtraProps } from '@/ui/atoms/streamdown/lib/markdown';
 import { MermaidComponent } from '@/ui/atoms/streamdown/lib/mermaid-component';
@@ -12,6 +13,12 @@ import type { BundledTheme } from 'shiki';
 const CodeBlock = lazy(() =>
   import('@/ui/atoms/streamdown/lib/code-block').then((mod) => ({
     default: mod.CodeBlock,
+  }))
+);
+
+const LazyMathStreamdown = lazy(() =>
+  import('@/ui/organisms/markdown/LazyMathStreamdown').then((mod) => ({
+    default: mod.LazyMathStreamdown,
   }))
 );
 
@@ -78,6 +85,7 @@ export function ArtifactMarkdownContent({
   className,
 }: ArtifactMarkdownContentProps) {
   const currentTheme = useAppSelector((state) => state.ui.theme);
+  const hasMathSyntax = useMemo(() => containsMathSyntax(content), [content]);
 
   const shikiTheme = useMemo<[BundledTheme, BundledTheme]>(() => {
     if (currentTheme === 'light' || currentTheme === 'system') {
@@ -128,16 +136,44 @@ export function ArtifactMarkdownContent({
 
   return (
     <div className={cn('markdown-content select-text', className)}>
-      <Streamdown
-        mode="static"
-        isAnimating={false}
-        parseIncompleteMarkdown={false}
-        controls={{ table: false, mermaid: true }}
-        components={components}
-        shikiTheme={shikiTheme}
-      >
-        {content}
-      </Streamdown>
+      {hasMathSyntax ? (
+        <Suspense
+          fallback={
+            <Streamdown
+              mode="static"
+              isAnimating={false}
+              parseIncompleteMarkdown={false}
+              controls={{ table: false, mermaid: true }}
+              components={components}
+              shikiTheme={shikiTheme}
+            >
+              {content}
+            </Streamdown>
+          }
+        >
+          <LazyMathStreamdown
+            mode="static"
+            isAnimating={false}
+            parseIncompleteMarkdown={false}
+            controls={{ table: false, mermaid: true }}
+            components={components}
+            shikiTheme={shikiTheme}
+          >
+            {content}
+          </LazyMathStreamdown>
+        </Suspense>
+      ) : (
+        <Streamdown
+          mode="static"
+          isAnimating={false}
+          parseIncompleteMarkdown={false}
+          controls={{ table: false, mermaid: true }}
+          components={components}
+          shikiTheme={shikiTheme}
+        >
+          {content}
+        </Streamdown>
+      )}
     </div>
   );
 }

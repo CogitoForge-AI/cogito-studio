@@ -2,7 +2,9 @@ import {
   Component,
   ErrorInfo,
   ReactNode,
+  Suspense,
   useEffect,
+  lazy,
   useMemo,
   useRef,
   useState,
@@ -12,11 +14,18 @@ import { Streamdown } from '@/ui/atoms/streamdown';
 import { useAppSelector } from '@/app/hooks';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { containsMathSyntax } from '@/lib/markdown/containsMathSyntax';
 import { shouldBypassStreamBuffer } from '@/features/chat/lib/html-preview';
 import { CustomCodeComponent } from './CustomCodeComponent';
 import { MarkdownMessageProvider } from './MarkdownMessageContext';
 import { MarkdownImage } from './MarkdownImage';
 import type { BundledTheme } from 'shiki';
+
+const LazyMathStreamdown = lazy(() =>
+  import('./LazyMathStreamdown').then((mod) => ({
+    default: mod.LazyMathStreamdown,
+  }))
+);
 
 export function MarkdownContent({
   content,
@@ -133,6 +142,10 @@ export function MarkdownContent({
   }, [isStreaming]);
 
   const displayedContent = isStreaming ? streamBuffer : sanitizedContent;
+  const hasMathSyntax = useMemo(
+    () => containsMathSyntax(displayedContent),
+    [displayedContent]
+  );
 
   // Override code component to add run button
   const components = useMemo(
@@ -166,16 +179,44 @@ export function MarkdownContent({
         )}
       >
         <MarkdownMessageProvider messageId={messageId}>
-          <Streamdown
-            mode={isStreaming ? 'streaming' : 'static'}
-            isAnimating={isStreaming}
-            parseIncompleteMarkdown={isStreaming}
-            controls={{ table: false, mermaid: true }}
-            components={components}
-            shikiTheme={shikiTheme}
-          >
-            {displayedContent}
-          </Streamdown>
+          {hasMathSyntax ? (
+            <Suspense
+              fallback={
+                <Streamdown
+                  mode={isStreaming ? 'streaming' : 'static'}
+                  isAnimating={isStreaming}
+                  parseIncompleteMarkdown={isStreaming}
+                  controls={{ table: false, mermaid: true }}
+                  components={components}
+                  shikiTheme={shikiTheme}
+                >
+                  {displayedContent}
+                </Streamdown>
+              }
+            >
+              <LazyMathStreamdown
+                mode={isStreaming ? 'streaming' : 'static'}
+                isAnimating={isStreaming}
+                parseIncompleteMarkdown={isStreaming}
+                controls={{ table: false, mermaid: true }}
+                components={components}
+                shikiTheme={shikiTheme}
+              >
+                {displayedContent}
+              </LazyMathStreamdown>
+            </Suspense>
+          ) : (
+            <Streamdown
+              mode={isStreaming ? 'streaming' : 'static'}
+              isAnimating={isStreaming}
+              parseIncompleteMarkdown={isStreaming}
+              controls={{ table: false, mermaid: true }}
+              components={components}
+              shikiTheme={shikiTheme}
+            >
+              {displayedContent}
+            </Streamdown>
+          )}
         </MarkdownMessageProvider>
       </div>
     </MarkdownErrorBoundary>

@@ -3,7 +3,6 @@ import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkRehype from 'remark-rehype';
-import rehypeHighlight from 'rehype-highlight';
 import rehypeStringify from 'rehype-stringify';
 import { logger } from './logger';
 
@@ -13,6 +12,8 @@ import { logger } from './logger';
  */
 async function markdownToHtml(markdown: string): Promise<string> {
   try {
+    const { default: rehypeHighlight } = await import('rehype-highlight');
+
     const file = await unified()
       .use(remarkParse)
       .use(remarkGfm)

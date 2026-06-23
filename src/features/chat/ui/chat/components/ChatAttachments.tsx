@@ -1,9 +1,9 @@
 import { memo } from 'react';
-import { FlowAttachment } from '../FlowAttachment';
 import { AttachedFileItem } from '../AttachedFileItem';
 import { SkillChip } from '../SkillChip';
 import { FlowData } from '@/features/chat/types';
 import type { InsertedSkill } from '../../../lib/skillAttachment';
+import { LazyFlowAttachment } from '../LazyFlowAttachment';
 
 interface ChatAttachmentsProps {
   attachedFiles: File[];
@@ -44,7 +44,7 @@ export const ChatAttachments = memo(function ChatAttachments({
 
       {attachedFlow && (
         <div className="flex gap-2 p-2 pt-0">
-          <FlowAttachment
+          <LazyFlowAttachment
             flow={attachedFlow}
             onClick={onOpenFlowDialog}
             onRemove={onRemoveFlow}

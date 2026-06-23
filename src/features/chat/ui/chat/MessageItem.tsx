@@ -1,11 +1,9 @@
 import { useRef, useCallback, memo, useState, useMemo } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
-import { FlowAttachment } from './FlowAttachment';
 import { cn } from '@/lib/utils';
 import { MarkdownContent } from '@/ui/organisms/markdown/MarkdownContent';
 import { AgentCard } from './AgentCard';
-import { FlowEditorDialog } from '@/ui/molecules/flow/FlowEditorDialog';
 import { MessageMentions } from './MessageMentions';
 import { parseMessageMentions } from './utils/mentionUtils';
 import { FLOW_NODES } from '@/ui/molecules/flow/constants';
@@ -14,6 +12,8 @@ import { parseSkillAttachment } from '../../lib/skillAttachment';
 import { SkillChip } from './SkillChip';
 import { MessageAttachments } from './components/MessageAttachments';
 import { MessageControls } from './components/MessageControls';
+import { LazyFlowAttachment } from './LazyFlowAttachment';
+import { LazyFlowEditorDialog } from './LazyFlowEditorDialog';
 
 export interface MessageItemProps {
   message: Message;
@@ -207,12 +207,12 @@ export const MessageItem = memo(
                 {/* Flow Attachment */}
                 {flowData && (
                   <div className="mb-2">
-                    <FlowAttachment
+                    <LazyFlowAttachment
                       flow={flowData}
                       mode="message"
                       onClick={() => setIsFlowDialogOpen(true)}
                     />
-                    <FlowEditorDialog
+                    <LazyFlowEditorDialog
                       open={isFlowDialogOpen}
                       initialFlow={flowData}
                       availableNodes={FLOW_NODES}

@@ -13,7 +13,6 @@ import {
  useTransition,
 } from 'react';
 import { harden } from 'rehype-harden';
-import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkCjkFriendly from 'remark-cjk-friendly';
@@ -83,13 +82,6 @@ const mathSanitizeSchema = {
 export const defaultRehypePlugins: Record<string, Pluggable> = {
  raw: rehypeRaw,
  sanitize: [rehypeSanitize, mathSanitizeSchema],
- katex: [
- rehypeKatex,
- {
- errorColor: 'var(--color-muted-foreground)',
- strict: 'warn',
- },
- ],
  harden: [
  harden,
  {
@@ -110,8 +102,8 @@ export const defaultRemarkPlugins: Record<string, Pluggable> = {
 } as const;
 
 // Stable plugin arrays for cache efficiency - created once at module level
-const defaultRehypePluginsArray = Object.values(defaultRehypePlugins);
-const defaultRemarkPluginsArray = Object.values(defaultRemarkPlugins);
+export const defaultRehypePluginsArray = Object.values(defaultRehypePlugins);
+export const defaultRemarkPluginsArray = Object.values(defaultRemarkPlugins);
 
 const carets = {
  block: ' ▋',

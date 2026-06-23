@@ -48,7 +48,7 @@ import { useSlashCommand } from '@/hooks/useSlashCommand';
 import { skillRecordToInserted } from '@/features/chat/lib/skillAttachment';
 import type { InsertedSkill } from '@/features/chat/lib/skillAttachment';
 import { SlashCommandDropdown } from '@/ui/molecules/SlashCommandDropdown';
-import { FLOW_NODES, FlowEditorDialog } from '@/ui/molecules/flow';
+import { FLOW_NODES } from '@/ui/molecules/flow/constants';
 
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { setWorkspaceSettingsOpen } from '@/features/ui/state/uiSlice';
@@ -56,6 +56,7 @@ import { useChatSubmit } from '../../hooks/useChatSubmit';
 import { useChatDragDrop } from '../../hooks/useChatDragDrop';
 import { ChatAttachments } from './components/ChatAttachments';
 import { ChatDragOverlay } from './components/ChatDragOverlay';
+import { LazyFlowEditorDialog } from './LazyFlowEditorDialog';
 import { useTextareaAutoResize } from '../../hooks/useTextareaAutoResize';
 import { CHAT_WIDTH_CLASSES } from '../ChatLayout';
 import { aggregateConversationTokenUsage } from '../../lib/tokenUsage';
@@ -722,7 +723,7 @@ export function ChatInput({
           </div>
         </div>
       </div>
-      <FlowEditorDialog
+      <LazyFlowEditorDialog
         open={flowDialogOpen}
         initialFlow={attachedFlow || undefined}
         availableNodes={FLOW_NODES}
