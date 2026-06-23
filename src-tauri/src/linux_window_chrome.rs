@@ -11,14 +11,6 @@ pub fn configure_frameless_window(window: WebviewWindow<Wry>) {
     if let Err(error) = window.set_decorations(false) {
         log::warn!("Failed to disable window decorations on Linux: {error}");
     }
-
-    for &delay_ms in STRIP_DELAYS_MS {
-        let window = window.clone();
-        gtk::glib::timeout_add_local_once(Duration::from_millis(u64::from(delay_ms)), move || {
-            hide_native_titlebar(&window);
-        });
-    }
-
     if let Ok(gtk_window) = window.gtk_window() {
         let window_for_map = window.clone();
         gtk_window.connect_map(move |_| {
