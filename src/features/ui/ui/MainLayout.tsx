@@ -26,6 +26,7 @@ import {
 
 // Screens
 import { ChatScreen } from '@/features/chat/ui/ChatScreen';
+import { ChatRightPanelControls } from '@/features/chat/ui/ChatRightPanelControls';
 
 const About = lazy(() =>
   import('@/features/settings/ui/About').then((module) => ({
@@ -141,23 +142,27 @@ export function MainLayout() {
           ) : null
         }
         rightContent={
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => dispatch(toggleRightPanel())}
-            aria-label={
-              isRightPanelOpen
-                ? t('collapseRightPanel', { ns: 'common' })
-                : t('expandRightPanel', { ns: 'common' })
-            }
-            className="h-7 w-7"
-          >
-            {isRightPanelOpen ? (
-              <PanelRightClose className="size-4" />
-            ) : (
-              <PanelRightOpen className="size-4" />
-            )}
-          </Button>
+          activePage === 'chat' ? (
+            <ChatRightPanelControls />
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => dispatch(toggleRightPanel())}
+              aria-label={
+                isRightPanelOpen
+                  ? t('collapseRightPanel', { ns: 'common' })
+                  : t('expandRightPanel', { ns: 'common' })
+              }
+              className="h-7 w-7"
+            >
+              {isRightPanelOpen ? (
+                <PanelRightClose className="size-4" />
+              ) : (
+                <PanelRightOpen className="size-4" />
+              )}
+            </Button>
+          )
         }
       />
 

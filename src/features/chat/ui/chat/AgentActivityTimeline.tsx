@@ -1,7 +1,9 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, Brain, Loader2, Wrench } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { useAppDispatch } from '@/app/hooks';
+import { showError } from '@/features/notifications/state/notificationSlice';
 import {
   summarizeActivity,
   type AgentActivity,
@@ -12,9 +14,6 @@ import type { PermissionRequest } from '@/features/tools/state/toolPermissionSli
 
 interface AgentActivityTimelineProps {
   activity: AgentActivity;
-  expandedToolCalls: Record<string, boolean>;
-  onToggleToolCall: (key: string, defaultValue: boolean) => void;
-  permissionTimeLeft: Record<string, number>;
   onPermissionRespond?: (
     messageId: string,
     toolId: string,
@@ -27,9 +26,7 @@ interface AgentActivityTimelineProps {
   t: (key: string, defaultValue?: string) => string;
 }
 
-function createToolCallKey(id: string, type: 'message' | 'permission'): string {
-  return `${type}:${id}`;
-}
+const PERMISSION_TIMEOUT_MS = 60_000;
 
 function CompactThinkingRow({
   step,
@@ -90,21 +87,60 @@ function CompactSnippetRow({
 
 export const AgentActivityTimeline = memo(function AgentActivityTimeline({
   activity,
-  expandedToolCalls,
-  onToggleToolCall,
-  permissionTimeLeft,
   onPermissionRespond,
   onCancelToolExecution,
   pending,
   pendingMessageId,
   t,
 }: AgentActivityTimelineProps) {
+  const dispatch = useAppDispatch();
+  const { t: translate } = useTranslation('chat');
   const [userOpen, setUserOpen] = useState<boolean | null>(null);
+  const timeoutHandledRef = useRef<string | null>(null);
   const open = userOpen ?? activity.defaultExpanded;
   const summary = useMemo(
     () => summarizeActivity(activity.steps),
     [activity.steps]
   );
+
+  useEffect(() => {
+    if (!pending || !onPermissionRespond) {
+      timeoutHandledRef.current = null;
+      return;
+    }
+
+    const timeoutKey = `${pending.messageId}:${pending.timestamp}`;
+    if (timeoutHandledRef.current === timeoutKey) {
+      return;
+    }
+
+    const remaining = Math.max(
+      0,
+      pending.timestamp + PERMISSION_TIMEOUT_MS - Date.now()
+    );
+
+    const timeoutId = window.setTimeout(() => {
+      timeoutHandledRef.current = timeoutKey;
+      pending.toolCalls.forEach((toolCall) => {
+        void onPermissionRespond(
+          pending.messageId,
+          toolCall.id,
+          toolCall.name,
+          false
+        );
+      });
+      dispatch(
+        showError(
+          translate(
+            'toolPermissionTimeout',
+            'Tool permission request timed out'
+          )
+        )
+      );
+    }, remaining);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [dispatch, onPermissionRespond, pending, translate]);
 
   if (activity.steps.length === 0 && !pending) return null;
 
@@ -135,16 +171,14 @@ export const AgentActivityTimeline = memo(function AgentActivityTimeline({
                 return <CompactSnippetRow key={step.id} step={step} />;
               }
 
-              const toolCallKey = createToolCallKey(step.id, 'message');
               return (
                 <ToolCallItem
                   key={step.id}
                   message={step.message}
                   data={step.data}
                   variant="compact"
-                  isExpanded={expandedToolCalls[toolCallKey] ?? false}
-                  onToggle={() => onToggleToolCall(toolCallKey, false)}
                   onCancel={onCancelToolExecution}
+                  defaultExpanded={false}
                   t={t}
                 />
               );
@@ -155,9 +189,6 @@ export const AgentActivityTimeline = memo(function AgentActivityTimeline({
 
       {pending
         ? pending.toolCalls.map((toolCall) => {
-            const toolCallKey = createToolCallKey(toolCall.id, 'permission');
-            const timeLeftValue = permissionTimeLeft[pendingMessageId];
-
             return (
               <div
                 key={toolCall.id}
@@ -171,10 +202,9 @@ export const AgentActivityTimeline = memo(function AgentActivityTimeline({
                     status: 'pending_permission',
                   }}
                   variant="compact"
-                  isExpanded={expandedToolCalls[toolCallKey] ?? true}
-                  onToggle={() => onToggleToolCall(toolCallKey, true)}
                   onCancel={onCancelToolExecution}
-                  timeLeft={timeLeftValue}
+                  defaultExpanded={true}
+                  requestTimestamp={pending.timestamp}
                   t={t}
                   onRespond={
                     onPermissionRespond

@@ -277,7 +277,10 @@ export function TitleBar({
       {/* Right panel column — aligns with right panel below when open */}
       <div
         className={cn(
-          'flex shrink-0 items-center bg-background',
+          'flex shrink-0 items-center transition-colors',
+          isRightPanelOpen && rightPanelWidth > 0
+            ? 'border-l border-border/50 bg-sidebar'
+            : 'bg-background',
           isRightPanelOpen && rightPanelWidth > 0 && 'justify-end'
         )}
         style={
@@ -288,7 +291,12 @@ export function TitleBar({
       >
         {rightContent ? (
           <div
-            className="flex items-center gap-1 px-1"
+            className={cn(
+              'flex min-w-0 items-center gap-1',
+              isRightPanelOpen && rightPanelWidth > 0
+                ? 'flex-1 justify-start px-3'
+                : 'px-1'
+            )}
             onMouseDown={(e) => e.stopPropagation()}
           >
             {rightContent}

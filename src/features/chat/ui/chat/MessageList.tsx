@@ -12,14 +12,10 @@ interface MessageListProps {
   messages: Message[];
   markdownEnabled?: Record<string, boolean>;
   copiedId?: string | null;
-  expandedToolCalls?: Record<string, boolean>;
   onMarkdownEnabledChange?: (markdownEnabled: Record<string, boolean>) => void;
   onCopiedIdChange?: (copiedId: string | null) => void;
   onEditingMessageIdChange?: (editingMessageId: string | null) => void;
   onEditingContentChange?: (editingContent: string) => void;
-  onExpandedToolCallsChange?: (
-    expandedToolCalls: Record<string, boolean>
-  ) => void;
   enableStreaming?: boolean;
   enablePendingPermissions?: boolean;
   streamingMessageId?: string | null;
@@ -33,21 +29,17 @@ interface MessageListProps {
   onViewAgentDetails?: (sessionId: string, agentId: string) => void;
   onCancelToolExecution?: () => void;
   t: (key: string) => string;
-  isLoading?: boolean;
   className?: string;
-  permissionTimeLeft?: Record<string, number>;
 }
 
 export const MessageList = memo(function MessageList({
   messages,
   markdownEnabled: externalMarkdownEnabled,
   copiedId: externalCopiedId,
-  expandedToolCalls: externalExpandedToolCalls,
   onMarkdownEnabledChange,
   onCopiedIdChange,
   onEditingMessageIdChange,
   onEditingContentChange,
-  onExpandedToolCallsChange,
   enableStreaming = true,
   enablePendingPermissions = true,
   streamingMessageId = null,
@@ -57,21 +49,12 @@ export const MessageList = memo(function MessageList({
   onCancelToolExecution,
   t,
   className,
-  permissionTimeLeft = {},
 }: MessageListProps) {
-  const {
-    markdownEnabled,
-    copiedId,
-    expandedToolCalls,
-    handleCopy,
-    toggleToolCall,
-  } = useMessageListState({
+  const { markdownEnabled, copiedId, handleCopy } = useMessageListState({
     externalMarkdownEnabled,
     externalCopiedId,
-    externalExpandedToolCalls,
     onMarkdownEnabledChange,
     onCopiedIdChange,
-    onExpandedToolCallsChange,
   });
 
   const handleEdit = useCallback(
@@ -169,9 +152,6 @@ export const MessageList = memo(function MessageList({
             {activity ? (
               <AgentActivityTimeline
                 activity={activity}
-                expandedToolCalls={expandedToolCalls}
-                onToggleToolCall={toggleToolCall}
-                permissionTimeLeft={permissionTimeLeft}
                 onPermissionRespond={onPermissionRespond}
                 onCancelToolExecution={onCancelToolExecution}
                 pending={pending}
@@ -181,9 +161,6 @@ export const MessageList = memo(function MessageList({
             ) : pending ? (
               <AgentActivityTimeline
                 activity={{ steps: [], defaultExpanded: true }}
-                expandedToolCalls={expandedToolCalls}
-                onToggleToolCall={toggleToolCall}
-                permissionTimeLeft={permissionTimeLeft}
                 onPermissionRespond={onPermissionRespond}
                 onCancelToolExecution={onCancelToolExecution}
                 pending={pending}

@@ -41,13 +41,6 @@ interface MessageChunkEvent {
   chunk: string;
 }
 
-interface ThinkingChunkEvent {
-  chat_id: string;
-  turn_id?: string;
-  message_id: string;
-  chunk: string;
-}
-
 interface MessageCompleteEvent {
   chat_id: string;
   turn_id?: string;
@@ -488,31 +481,6 @@ export function useConversationEventProjector() {
       }
     );
 
-    const unlistenThinkingChunk = listenToEvent<ThinkingChunkEvent>(
-      TauriEvents.THINKING_CHUNK,
-      (payload) => {
-        const phaseKind =
-          store.getState().conversationRuntime.byChatId[payload.chat_id]?.phase
-            .kind;
-        if (phaseKind === 'cancelled') {
-          return;
-        }
-        dispatch(
-          messagesApi.util.updateQueryData(
-            'getMessages',
-            payload.chat_id,
-            (draft: Message[]) => {
-              const message = draft.find((m) => m.id === payload.message_id);
-              if (message) {
-                if (!message.reasoning) message.reasoning = '';
-                message.reasoning += payload.chunk;
-              }
-            }
-          )
-        );
-      }
-    );
-
     const unlistenLlmComplete = listenToEvent<LlmCallCompleteEvent>(
       TauriEvents.LLM_CALL_COMPLETE,
       (payload) => {
@@ -692,7 +660,6 @@ export function useConversationEventProjector() {
       unlistenPhaseChanged.then((fn) => fn());
       unlistenStarted.then((fn) => fn());
       unlistenChunk.then((fn) => fn());
-      unlistenThinkingChunk.then((fn) => fn());
       unlistenLlmComplete.then((fn) => fn());
       unlistenComplete.then((fn) => fn());
       unlistenError.then((fn) => fn());

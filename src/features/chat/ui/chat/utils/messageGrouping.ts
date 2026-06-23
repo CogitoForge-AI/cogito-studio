@@ -68,7 +68,7 @@ function buildStepsForAssistant(
     streamingMessageId === assistant.id &&
     !hasMeaningfulAssistantContent(assistant.content);
 
-  if (assistant.reasoning?.trim() || isStreaming) {
+  if (assistant.reasoning?.trim()) {
     steps.push({
       kind: 'thinking',
       id: `thinking-${assistant.id}`,

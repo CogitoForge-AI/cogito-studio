@@ -41,7 +41,7 @@ export function ArtifactsPanel() {
 
   if (!selectedChatId) {
     return (
-      <div className="flex h-full flex-col p-2">
+      <div className="flex h-full flex-col px-3 py-3">
         <ArtifactsEmptyState
           title={t('noChatTitle')}
           description={t('noChatDescription')}
@@ -51,9 +51,9 @@ export function ArtifactsPanel() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-2">
+    <div className="flex h-full flex-col overflow-hidden px-3 py-3">
       <ScrollArea className="flex-1">
-        <div className="flex flex-col gap-1 pb-2">
+        <div className="flex flex-col gap-1.5 pb-3">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-10 opacity-50">
               <span className="text-xs">{t('loading')}</span>

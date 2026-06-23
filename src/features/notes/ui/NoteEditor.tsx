@@ -33,7 +33,7 @@ export function NoteEditor() {
 
   return (
     <div className="animate-in slide-in-from-right flex flex-col duration-300 h-full">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <button
           onClick={() => dispatch(setActiveNote(null))}
           className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
@@ -50,7 +50,7 @@ export function NoteEditor() {
         value={title}
         onChange={(e) => handleTitleChange(e.target.value)}
         placeholder="Title"
-        className="border-none bg-transparent p-0 text-lg font-bold shadow-none ring-0 placeholder:text-muted-foreground/30 focus-visible:ring-0 mb-4"
+        className="mb-3 border-none bg-transparent p-0 text-lg font-bold shadow-none ring-0 placeholder:text-muted-foreground/30 focus-visible:ring-0"
       />
       <Textarea
         value={content}

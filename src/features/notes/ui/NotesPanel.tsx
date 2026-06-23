@@ -9,7 +9,7 @@ export function NotesPanel() {
   );
 
   return (
-    <div className="flex h-full flex-col p-4 bg-background/30 backdrop-blur-sm">
+    <div className="flex h-full flex-col px-3 py-3">
       {activeNoteId ? <NoteEditor key={activeNoteId} /> : <NoteList />}
     </div>
   );

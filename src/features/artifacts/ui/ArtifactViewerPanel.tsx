@@ -17,7 +17,7 @@ export function ArtifactViewerPanel() {
 
   if (!artifactViewer) {
     return (
-      <div className="flex h-full flex-col p-4">
+      <div className="flex h-full flex-col px-3 py-3">
         <ArtifactsEmptyState
           title={t('viewerEmptyTitle')}
           description={t('viewerEmptyDescription')}
@@ -32,7 +32,7 @@ export function ArtifactViewerPanel() {
 
   if (!artifact) {
     return (
-      <div className="flex h-full flex-col p-4">
+      <div className="flex h-full flex-col px-3 py-3">
         <ArtifactsEmptyState
           title={t('viewerEmptyTitle')}
           description={t('viewerEmptyDescription')}
@@ -46,7 +46,7 @@ export function ArtifactViewerPanel() {
       const url = artifactViewer.payload?.url;
       if (!url) {
         return (
-          <div className="flex h-full flex-col p-4">
+          <div className="flex h-full flex-col px-3 py-3">
             <ArtifactsEmptyState
               title={t('viewerLoadError')}
               description={t('viewerEmptyDescription')}
@@ -60,7 +60,7 @@ export function ArtifactViewerPanel() {
       return <MarkdownArtifactViewer artifact={artifact} />;
     default:
       return (
-        <div className="flex h-full flex-col p-4">
+        <div className="flex h-full flex-col px-3 py-3">
           <ArtifactsEmptyState
             title={t('viewerEmptyTitle')}
             description={t('viewerEmptyDescription')}

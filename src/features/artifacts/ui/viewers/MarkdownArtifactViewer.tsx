@@ -65,7 +65,7 @@ export function MarkdownArtifactViewer({
             ? {
                 content: (
                   <ScrollArea className="min-h-0 flex-1">
-                    <div className="select-text p-6">
+                    <div className="select-text px-4 py-3">
                       <ArtifactMarkdownContent content={content} />
                     </div>
                   </ScrollArea>
@@ -75,7 +75,7 @@ export function MarkdownArtifactViewer({
         }
       />
       <ScrollArea className="min-h-0 flex-1">
-        <div className="select-text p-4">
+        <div className="select-text px-3 py-3">
           {loading ? (
             <div className="py-10 text-center text-xs text-muted-foreground">
               {t('loading')}

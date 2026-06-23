@@ -1,28 +1,15 @@
-import { FileText, Package, Eye } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { cn } from '@/lib/utils';
 import { NotesPanel } from '@/features/notes/ui/NotesPanel';
 import { ArtifactsPanel } from '@/features/artifacts/ui/ArtifactsPanel';
 import { ArtifactViewerPanel } from '@/features/artifacts/ui/ArtifactViewerPanel';
 import { useGetArtifactsQuery } from '@/features/artifacts/state/artifactsApi';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/atoms/tooltip';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { setRightPanelTab } from '@/features/ui/state/uiSlice';
+import { useAppSelector } from '@/app/hooks';
 
 export function ChatRightPanel() {
-  const dispatch = useAppDispatch();
-  const { t } = useTranslation(['artifacts', 'common']);
   const activeTab = useAppSelector((state) => state.ui.rightPanelTab);
   const selectedChatId = useAppSelector((state) => state.chats.selectedChatId);
 
   // Keep artifact cache subscribed while the right panel is mounted so invalidations refetch immediately.
   useGetArtifactsQuery(selectedChatId ?? '', { skip: !selectedChatId });
-
-  const tabs = [
-    { id: 'artifacts' as const, icon: Package, label: t('artifacts:tabLabel') },
-    { id: 'viewer' as const, icon: Eye, label: t('artifacts:viewerTabLabel') },
-    { id: 'notes' as const, icon: FileText, label: t('common:notes') },
-  ];
 
   const renderContent = () => {
     switch (activeTab) {
@@ -37,38 +24,8 @@ export function ChatRightPanel() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-background">
-      {/* Topbar */}
-      <div className="flex h-9 shrink-0 items-center justify-between bg-background/50 px-1 pr-2 backdrop-blur-md">
-        <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar">
-          {tabs.map((tab) => (
-            <Tooltip key={tab.id}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => dispatch(setRightPanelTab(tab.id))}
-                  className={cn(
-                    'relative flex size-7 items-center justify-center rounded-md transition-colors duration-200',
-                    activeTab === tab.id
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
-                  )}
-                >
-                  <tab.icon className="size-4" />
-                  {activeTab === tab.id && (
-                    <span className="absolute bottom-0 left-1 right-1 h-0.5 rounded-full bg-primary" />
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                {tab.label}
-              </TooltipContent>
-            </Tooltip>
-          ))}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="relative flex-1 overflow-hidden bg-linear-to-b from-background to-accent/5">
+    <div className="flex h-full flex-col bg-sidebar">
+      <div className="relative flex-1 overflow-hidden bg-linear-to-b from-sidebar to-sidebar-accent/25">
         {renderContent()}
       </div>
     </div>

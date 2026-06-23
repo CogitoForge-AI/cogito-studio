@@ -2,7 +2,7 @@ use crate::constants::TauriEvents;
 use crate::error::AppError;
 use crate::events::{
     MessageCancelledEvent, MessageChunkEvent, MessageCompleteEvent, MessageErrorEvent,
-    MessageMetadataUpdatedEvent, MessageStartedEvent, ThinkingChunkEvent,
+    MessageMetadataUpdatedEvent, MessageStartedEvent,
 };
 use crate::state::AppState;
 use tauri::{AppHandle, Emitter, Manager};
@@ -87,18 +87,8 @@ impl MessageEmitter {
         chunk: &str,
     ) -> Result<(), AppError> {
         self.persist_reasoning_chunk(message_id, chunk);
-        let turn_id = self.resolve_turn_id(chat_id);
-        self.app
-            .emit(
-                TauriEvents::THINKING_CHUNK,
-                ThinkingChunkEvent {
-                    chat_id: chat_id.to_string(),
-                    turn_id,
-                    message_id: message_id.to_string(),
-                    chunk: chunk.to_string(),
-                },
-            )
-            .map_err(|e| AppError::Generic(format!("Failed to emit thinking-chunk event: {e}")))
+        let _ = chat_id;
+        Ok(())
     }
 
     pub fn emit_message_complete(

@@ -54,7 +54,7 @@ export function ChatArea() {
   const { data: llmConnections = [] } = useGetLLMConnectionsQuery();
 
   // Use messages hook
-  const { messages, isStreaming, streamingMessageId, handleStopStreaming } =
+  const { messages, streamingMessageId, handleStopStreaming } =
     useMessages(selectedChatId);
 
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -446,7 +446,6 @@ export function ChatArea() {
       <ChatMessages
         chatId={selectedChatId}
         messages={messages}
-        isLoading={isStreaming}
         streamingMessageId={streamingMessageId}
         onCancelToolExecution={handleStopStreaming}
         onEditMessage={handleEditMessage}

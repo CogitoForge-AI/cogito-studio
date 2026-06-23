@@ -25,7 +25,7 @@ export function NoteList() {
   );
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-hidden">
+    <div className="flex h-full flex-col gap-3 overflow-hidden">
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
@@ -33,7 +33,7 @@ export function NoteList() {
             placeholder="Search notes..."
             value={searchQuery}
             onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-            className="h-9 border-none bg-secondary/30 pl-9 text-xs ring-0 focus-visible:ring-1 focus-visible:ring-primary/20"
+            className="h-8 border-none bg-sidebar-accent/55 pl-9 text-xs ring-0 focus-visible:ring-1 focus-visible:ring-primary/20"
           />
         </div>
         <button
@@ -45,14 +45,14 @@ export function NoteList() {
               dispatch(setSearchQuery(''));
             }
           }}
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-[background-color,color,transform] hover:bg-primary hover:text-primary-foreground active:scale-95 shadow-sm"
+          className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary shadow-sm transition-[background-color,color,transform] hover:bg-primary hover:text-primary-foreground active:scale-95"
         >
           <Plus className="size-4" />
         </button>
       </div>
 
-      <ScrollArea className="-mx-1 flex-1 px-1">
-        <div className="flex flex-col gap-2 pb-4">
+      <ScrollArea className="flex-1">
+        <div className="flex flex-col gap-1.5 pb-3">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-10 opacity-50">
               <span className="text-xs">Loading notes...</span>

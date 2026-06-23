@@ -1,18 +1,24 @@
-import { ReactNode, useCallback, useEffect, useState } from 'react';
-import { useAppSelector } from '@/app/hooks';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/atoms/tooltip';
 import {
   DEFAULT_RIGHT_PANEL_WIDTH,
   usePersistRightPanelWidth,
 } from '@/features/ui/hooks/useLayoutWidths';
+import { toggleRightPanel } from '@/features/ui/state/uiSlice';
 
 const MIN_RIGHT_AREA_WIDTH = 300;
+const DRAG_THRESHOLD_PX = 4;
 
 interface ResizableRightPanelProps {
   children: ReactNode;
 }
 
 export function ResizableRightPanel({ children }: ResizableRightPanelProps) {
+  const dispatch = useAppDispatch();
+  const { t } = useTranslation('common');
   const isRightPanelOpen = useAppSelector((state) => state.ui.isRightPanelOpen);
   const [rightAreaWidth, setRightAreaWidth] = useState(() => {
     const saved = localStorage.getItem('rightAreaWidth');
@@ -22,6 +28,8 @@ export function ResizableRightPanel({ children }: ResizableRightPanelProps) {
   });
   const persistRightPanelWidth = usePersistRightPanelWidth();
   const [resizing, setResizing] = useState(false);
+  const dragStartXRef = useRef(0);
+  const didDragRef = useRef(false);
 
   const startResizing = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -73,29 +81,88 @@ export function ResizableRightPanel({ children }: ResizableRightPanelProps) {
     return () => window.removeEventListener('resize', handleWindowResize);
   }, [handleWindowResize]);
 
+  const handleResizeEnd = useCallback(() => {
+    stopResizing();
+    if (!didDragRef.current) {
+      dispatch(toggleRightPanel());
+    }
+  }, [dispatch, stopResizing]);
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      dragStartXRef.current = e.clientX;
+      didDragRef.current = false;
+      startResizing(e);
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        if (
+          Math.abs(moveEvent.clientX - dragStartXRef.current) >=
+          DRAG_THRESHOLD_PX
+        ) {
+          didDragRef.current = true;
+        }
+      };
+
+      const handleMouseUp = () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+        handleResizeEnd();
+      };
+
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    },
+    [handleResizeEnd, startResizing]
+  );
+
   return (
     <div
       className={cn(
-        'relative shrink-0 overflow-hidden bg-sidebar transition-[width] duration-300 ease-in-out',
+        'relative shrink-0 overflow-hidden border-l border-border/50 bg-sidebar transition-[width] duration-300 ease-in-out',
         resizing && 'transition-none duration-0',
-        !isRightPanelOpen ? 'w-0' : ''
+        !isRightPanelOpen && 'w-0 border-l-transparent'
       )}
       style={{ width: isRightPanelOpen ? rightAreaWidth : 0 }}
     >
       {isRightPanelOpen && (
-        <div
-          onMouseDown={startResizing}
-          className={cn(
-            'absolute top-0 left-0 bottom-0 w-0.5 z-50 transition-colors',
-            'hover:bg-primary/20 hover:w-0.5',
-            resizing ? 'bg-primary/40 w-0.5' : 'bg-transparent'
-          )}
-        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label={t('collapseRightPanel')}
+              onMouseDown={handleMouseDown}
+              className="group/right-resizer absolute top-0 bottom-0 left-0 z-50 flex w-2 -translate-x-1/2 items-center justify-center"
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  'h-7 w-1 rounded-full bg-muted-foreground/50 transition-opacity duration-150',
+                  resizing
+                    ? 'opacity-100'
+                    : 'opacity-0 group-hover/right-resizer:opacity-100'
+                )}
+              />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent
+            side="left"
+            sideOffset={6}
+            className="border-0 bg-foreground px-2.5 py-2 text-background shadow-md [&>svg]:hidden"
+          >
+            <div className="flex flex-col gap-0.5 text-xs leading-snug">
+              <span>{t('collapseRightPanel')}</span>
+              <span className="text-background/65">
+                {t('sidebarResizerDrag')}
+              </span>
+            </div>
+          </TooltipContent>
+        </Tooltip>
       )}
 
       <div
         className={cn(
-          'h-full transition-opacity duration-300 ease-in-out',
+          'h-full bg-sidebar transition-opacity duration-300 ease-in-out',
           !isRightPanelOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
         )}
         style={{ width: rightAreaWidth }}

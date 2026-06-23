@@ -20,10 +20,10 @@ export function ArtifactItem({
     <div
       onClick={onOpen}
       className={cn(
-        'group flex items-center justify-between gap-2 rounded-md border px-4 py-1.5 transition-[background-color,border-color] duration-200',
+        'group flex items-center justify-between gap-2 rounded-md border px-3 py-2 transition-[background-color,border-color] duration-200',
         isActive
           ? 'border-primary/30 bg-primary/10 ring-1 ring-primary/20'
-          : 'border-border/40 bg-secondary/15 hover:border-border/80 hover:bg-secondary/30'
+          : 'border-border/40 bg-sidebar-accent/45 hover:border-border/80 hover:bg-sidebar-accent/70'
       )}
     >
       <div className="flex min-w-0 flex-1 items-center gap-1">

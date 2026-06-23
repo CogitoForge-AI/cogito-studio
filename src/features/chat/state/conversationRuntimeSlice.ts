@@ -64,6 +64,13 @@ export function activeStreamingMessageId(
   return runtime.phase.active_message_id;
 }
 
+function shouldClearRuntime(
+  phase: ConversationPhase,
+  queueDepth: number
+): boolean {
+  return !isActiveConversationPhase(phase.kind) && queueDepth === 0;
+}
+
 const conversationRuntimeSlice = createSlice({
   name: 'conversationRuntime',
   initialState,
@@ -73,6 +80,11 @@ const conversationRuntimeSlice = createSlice({
       action: PayloadAction<ConversationSnapshot>
     ) => {
       const { chat_id, phase, queue_depth } = action.payload;
+      if (shouldClearRuntime(phase, queue_depth)) {
+        delete state.byChatId[chat_id];
+        return;
+      }
+
       state.byChatId[chat_id] = {
         phase,
         queue_depth,
@@ -89,9 +101,16 @@ const conversationRuntimeSlice = createSlice({
     ) => {
       const { chatId, phase, queueDepth } = action.payload;
       const existing = state.byChatId[chatId];
+      const nextQueueDepth = queueDepth ?? existing?.queue_depth ?? 0;
+
+      if (shouldClearRuntime(phase, nextQueueDepth)) {
+        delete state.byChatId[chatId];
+        return;
+      }
+
       state.byChatId[chatId] = {
         phase,
-        queue_depth: queueDepth ?? existing?.queue_depth ?? 0,
+        queue_depth: nextQueueDepth,
         lastUpdatedAt: Date.now(),
       };
     },

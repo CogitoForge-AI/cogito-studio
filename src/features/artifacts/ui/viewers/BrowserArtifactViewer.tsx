@@ -13,7 +13,7 @@ const BrowserWebviewHost = lazy(() =>
 );
 
 const WEBVIEW_HOST_CLASS =
-  'h-full min-h-0 flex-1 rounded-lg border-0 bg-muted/20';
+  'h-full min-h-0 flex-1 rounded-md border border-border/30 bg-muted/20';
 
 interface BrowserArtifactViewerProps {
   artifact: Artifact;
@@ -97,7 +97,7 @@ export function BrowserArtifactViewer({
             : null
         }
       />
-      <div className="relative min-h-0 flex-1 p-4">
+      <div className="relative min-h-0 flex-1 px-3 py-3">
         {isFullscreen ? null : !isReady ? (
           <BrowserStreamSkeleton className="h-full min-h-[320px]" />
         ) : (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
@@ -12,7 +12,12 @@ import { showError } from '@/features/notifications/state/notificationSlice';
 import { setAttachedFiles } from '../state/chatInputSlice';
 import { logger } from '@/lib/logger';
 import { invokeCommand, TauriCommands } from '@/lib/tauri';
-import { isActiveConversationPhase } from '../state/conversationRuntimeSlice';
+import {
+  clearConversationRuntime,
+  isActiveConversationPhase,
+  setConversationSnapshot,
+  type ConversationSnapshot,
+} from '../state/conversationRuntimeSlice';
 
 /**
  * Hook to access and manage chats
@@ -34,6 +39,7 @@ export function useChats(selectedWorkspaceId: string | null) {
   const conversationRuntime = useAppSelector(
     (state) => state.conversationRuntime.byChatId
   );
+  const previousSelectedChatIdRef = useRef<string | null>(selectedChatId);
 
   useEffect(() => {
     if (!selectedWorkspaceId) return;
@@ -68,6 +74,36 @@ export function useChats(selectedWorkspaceId: string | null) {
       }
     }
   }, [selectedWorkspaceId, selectedChatId, chatsByWorkspaceId, dispatch]);
+
+  useEffect(() => {
+    const previousChatId = previousSelectedChatIdRef.current;
+    previousSelectedChatIdRef.current = selectedChatId;
+
+    if (!previousChatId || previousChatId === selectedChatId) {
+      return;
+    }
+
+    void invokeCommand<ConversationSnapshot>(
+      TauriCommands.GET_CONVERSATION_STATE,
+      {
+        chatId: previousChatId,
+      }
+    )
+      .then((snapshot) => {
+        if (
+          isActiveConversationPhase(snapshot.phase.kind) ||
+          snapshot.queue_depth > 0
+        ) {
+          dispatch(setConversationSnapshot(snapshot));
+          return;
+        }
+
+        dispatch(clearConversationRuntime(previousChatId));
+      })
+      .catch((error) => {
+        logger.error('Failed to refresh previous conversation state:', error);
+      });
+  }, [dispatch, selectedChatId]);
 
   const handleNewChat = async () => {
     if (!selectedWorkspaceId) return;

@@ -1,4 +1,11 @@
-import { useMemo, useCallback, memo, type MouseEvent } from 'react';
+import {
+  useMemo,
+  useCallback,
+  memo,
+  useEffect,
+  useState,
+  type MouseEvent,
+} from 'react';
 import {
   Wrench,
   AlertCircle,
@@ -27,13 +34,14 @@ export interface ToolCallItemProps {
   message?: Message;
   data?: ToolCallData;
   variant?: 'default' | 'compact';
-  isExpanded: boolean;
-  onToggle: () => void;
+  defaultExpanded?: boolean;
   t: (key: string, defaultValue?: string) => string;
   onRespond?: (allow: boolean) => void;
   onCancel?: () => void;
-  timeLeft?: number;
+  requestTimestamp?: number;
 }
+
+const PERMISSION_TIMEOUT_MS = 60_000;
 
 function formatJSONSafety(str: unknown): string {
   if (str === undefined || str === null) return '';
@@ -114,23 +122,36 @@ export const ToolCallItem = memo(
     message,
     data,
     variant = 'default',
-    isExpanded,
-    onToggle,
+    defaultExpanded = false,
     t,
     onRespond,
     onCancel,
-    timeLeft,
+    requestTimestamp,
   }: ToolCallItemProps) {
     const toolCallData = useMemo(
       () => parseToolCallMessage(message, data),
       [message, data]
     );
 
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+    const isPendingStatus = toolCallData?.status === 'pending_permission';
+    const [timeLeft, setTimeLeft] = useState<number | undefined>(() => {
+      if (!isPendingStatus || requestTimestamp === undefined) {
+        return undefined;
+      }
+
+      const remaining = Math.max(
+        0,
+        PERMISSION_TIMEOUT_MS - (Date.now() - requestTimestamp)
+      );
+      return Math.ceil(remaining / 1000);
+    });
+
     const handleToggle = useCallback(() => {
       const selection = window.getSelection();
       if (selection && selection.toString().length > 0) return;
-      onToggle();
-    }, [onToggle]);
+      setIsExpanded((current) => !current);
+    }, []);
 
     const handleRespond = useCallback(
       (e: MouseEvent<HTMLButtonElement>, allow: boolean) => {
@@ -147,6 +168,24 @@ export const ToolCallItem = memo(
       },
       [onCancel]
     );
+
+    useEffect(() => {
+      if (!isPendingStatus || requestTimestamp === undefined) {
+        return;
+      }
+
+      const updateTimeLeft = () => {
+        const remaining = Math.max(
+          0,
+          PERMISSION_TIMEOUT_MS - (Date.now() - requestTimestamp)
+        );
+        setTimeLeft(Math.ceil(remaining / 1000));
+      };
+
+      updateTimeLeft();
+      const interval = window.setInterval(updateTimeLeft, 1000);
+      return () => window.clearInterval(interval);
+    }, [isPendingStatus, requestTimestamp]);
 
     if (!toolCallData) {
       return null;
@@ -302,8 +341,8 @@ export const ToolCallItem = memo(
     return (
       prevId === nextId &&
       prevDataStr === nextDataStr &&
-      prevProps.isExpanded === nextProps.isExpanded &&
-      prevProps.timeLeft === nextProps.timeLeft &&
+      prevProps.defaultExpanded === nextProps.defaultExpanded &&
+      prevProps.requestTimestamp === nextProps.requestTimestamp &&
       prevProps.variant === nextProps.variant
     );
   }

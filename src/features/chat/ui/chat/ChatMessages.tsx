@@ -9,7 +9,6 @@ import { CHAT_WIDTH_CLASSES } from '../ChatLayout';
 interface ChatMessagesProps {
   chatId: string | null;
   messages: Message[];
-  isLoading: boolean;
   streamingMessageId: string | null;
   onCancelToolExecution?: () => void;
   onEditMessage?: (messageId: string | null) => void;
@@ -18,15 +17,13 @@ interface ChatMessagesProps {
 export function ChatMessages({
   chatId,
   messages,
-  isLoading,
   streamingMessageId,
   onCancelToolExecution,
   onEditMessage,
 }: ChatMessagesProps) {
   const { t } = useTranslation('chat');
 
-  const { pendingRequests, permissionTimeLeft, handlePermissionRespond } =
-    useToolPermission();
+  const { pendingRequests, handlePermissionRespond } = useToolPermission();
 
   return (
     <ChatScrollArea chatId={chatId} messageCount={messages.length}>
@@ -39,9 +36,7 @@ export function ChatMessages({
         onPermissionRespond={handlePermissionRespond}
         onCancelToolExecution={onCancelToolExecution}
         onEditingMessageIdChange={onEditMessage}
-        permissionTimeLeft={permissionTimeLeft}
         t={t}
-        isLoading={isLoading && !streamingMessageId}
         className={cn(CHAT_WIDTH_CLASSES, 'py-4')}
       />
     </ChatScrollArea>
