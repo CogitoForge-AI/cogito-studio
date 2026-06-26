@@ -72,6 +72,22 @@ PY
   exit 1
 }
 
+pick_first_asset_url() {
+  local json="$1"
+  shift
+
+  local asset_name asset_url
+  for asset_name in "$@"; do
+    asset_url="$(pick_asset_url "$json" "$asset_name" || true)"
+    if [ -n "$asset_url" ]; then
+      printf '%s\n' "$asset_url"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 download_file() {
   local url="$1"
   local out="$2"
@@ -82,23 +98,34 @@ download_file() {
 install_macos() {
   local release_json="$1"
   local arch="$2"
-  local dmg_name=""
+  local dmg_names=()
 
   case "$arch" in
-    arm64|aarch64) dmg_name="Cogito Studio_${RESOLVED_VERSION}_aarch64.dmg" ;;
-    x86_64|amd64) dmg_name="Cogito Studio_${RESOLVED_VERSION}_x64.dmg" ;;
+    arm64|aarch64)
+      dmg_names=(
+        "Cogito.Studio_${RESOLVED_VERSION}_aarch64.dmg"
+        "Cogito Studio_${RESOLVED_VERSION}_aarch64.dmg"
+      )
+      ;;
+    x86_64|amd64)
+      dmg_names=(
+        "Cogito.Studio_${RESOLVED_VERSION}_x64.dmg"
+        "Cogito Studio_${RESOLVED_VERSION}_x64.dmg"
+      )
+      ;;
     *)
       error "Unsupported macOS architecture: ${arch}"
       exit 1
       ;;
   esac
 
-  local dmg_url
-  dmg_url="$(pick_asset_url "$release_json" "$dmg_name" || true)"
+  local dmg_url dmg_name
+  dmg_url="$(pick_first_asset_url "$release_json" "${dmg_names[@]}" || true)"
   if [ -z "$dmg_url" ]; then
-    error "Could not find asset '${dmg_name}' in release '${RESOLVED_VERSION}'."
+    error "Could not find a macOS DMG asset in release '${RESOLVED_VERSION}'."
     exit 1
   fi
+  dmg_name="${dmg_url##*/}"
 
   local tmp_dir dmg_path mount_point
   tmp_dir="$(mktemp -d)"
@@ -142,10 +169,16 @@ install_linux() {
   tmp_dir="$(mktemp -d)"
 
   if command -v apt-get >/dev/null 2>&1 && command -v dpkg >/dev/null 2>&1; then
-    local deb_name deb_url deb_path
-    deb_name="Cogito Studio_${RESOLVED_VERSION}_amd64.deb"
-    deb_url="$(pick_asset_url "$release_json" "$deb_name" || true)"
+    local deb_url deb_path
+    deb_url="$(
+      pick_first_asset_url \
+        "$release_json" \
+        "Cogito.Studio_${RESOLVED_VERSION}_amd64.deb" \
+        "Cogito Studio_${RESOLVED_VERSION}_amd64.deb" \
+        || true
+    )"
     if [ -n "$deb_url" ]; then
+      local deb_name="${deb_url##*/}"
       deb_path="${tmp_dir}/${deb_name}"
       download_file "$deb_url" "$deb_path"
       info "Installing .deb package..."
@@ -157,10 +190,16 @@ install_linux() {
   fi
 
   if command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1 || command -v rpm >/dev/null 2>&1; then
-    local rpm_name rpm_url rpm_path
-    rpm_name="Cogito Studio-${RESOLVED_VERSION}-1.x86_64.rpm"
-    rpm_url="$(pick_asset_url "$release_json" "$rpm_name" || true)"
+    local rpm_url rpm_path
+    rpm_url="$(
+      pick_first_asset_url \
+        "$release_json" \
+        "Cogito.Studio-${RESOLVED_VERSION}-1.x86_64.rpm" \
+        "Cogito Studio-${RESOLVED_VERSION}-1.x86_64.rpm" \
+        || true
+    )"
     if [ -n "$rpm_url" ]; then
+      local rpm_name="${rpm_url##*/}"
       rpm_path="${tmp_dir}/${rpm_name}"
       download_file "$rpm_url" "$rpm_path"
       info "Installing .rpm package..."
@@ -177,9 +216,14 @@ install_linux() {
     fi
   fi
 
-  local appimage_name appimage_url appimage_path install_dir
-  appimage_name="Cogito Studio_${RESOLVED_VERSION}_amd64.AppImage"
-  appimage_url="$(pick_asset_url "$release_json" "$appimage_name" || true)"
+  local appimage_url appimage_path install_dir
+  appimage_url="$(
+    pick_first_asset_url \
+      "$release_json" \
+      "Cogito.Studio_${RESOLVED_VERSION}_amd64.AppImage" \
+      "Cogito Studio_${RESOLVED_VERSION}_amd64.AppImage" \
+      || true
+  )"
   if [ -z "$appimage_url" ]; then
     rm -rf "$tmp_dir"
     error "Could not find installable Linux asset in release '${RESOLVED_VERSION}'."

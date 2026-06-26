@@ -79,6 +79,22 @@ function Get-AssetByName {
     return $Release.assets | Where-Object { $_.name -eq $AssetName } | Select-Object -First 1
 }
 
+function Get-FirstAssetByName {
+    param(
+        [object]$Release,
+        [string[]]$AssetNames
+    )
+
+    foreach ($assetName in $AssetNames) {
+        $asset = Get-AssetByName -Release $Release -AssetName $assetName
+        if ($asset) {
+            return $asset
+        }
+    }
+
+    return $null
+}
+
 function Install-Msi {
     param(
         [string]$MsiPath,
@@ -132,13 +148,19 @@ if (-not $release -or -not $release.tag_name) {
 $resolvedVersion = $release.tag_name
 Write-Info "Using release: $resolvedVersion"
 
-$msiName = "Cogito Studio_${resolvedVersion}_x64_en-US.msi"
-$exeName = "Cogito Studio_${resolvedVersion}_x64-setup.exe"
+$msiNames = @(
+    "Cogito.Studio_${resolvedVersion}_x64_en-US.msi",
+    "Cogito Studio_${resolvedVersion}_x64_en-US.msi"
+)
+$exeNames = @(
+    "Cogito.Studio_${resolvedVersion}_x64-setup.exe",
+    "Cogito Studio_${resolvedVersion}_x64-setup.exe"
+)
 
-$asset = Get-AssetByName -Release $release -AssetName $msiName
+$asset = Get-FirstAssetByName -Release $release -AssetNames $msiNames
 $installerType = "msi"
 if (-not $asset) {
-    $asset = Get-AssetByName -Release $release -AssetName $exeName
+    $asset = Get-FirstAssetByName -Release $release -AssetNames $exeNames
     $installerType = "exe"
 }
 
